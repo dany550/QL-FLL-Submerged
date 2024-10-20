@@ -5,11 +5,11 @@ tools.py l:126 huh?
 
 [funkce = metoda]
 tools.py/straight_position() ###########################
-- mozna by bylo dobry tam psat co ta funkce dela
+kravina poznamka - mozna by bylo dobry tam psat co ta funkce dela
 - mit ty stejny konstanty na zacatku kazdy funkce je trochu zbytecny
 - proc mas souradnice jako list?
-tools.py l:404 kdyz uz tak pis *avg* místo *avr*
-tools.py l:444 proc ma origin 4 prvky?
+kravina poznamka - tools.py l:404 kdyz uz tak pis *avg* místo *avr*
+kravina poznamka - tools.py l:444 proc ma origin 4 prvky?
 
 
 trochu jinak bych si představoval tools.py/accelerator
