@@ -169,9 +169,3 @@ def Avg(values):
         for i in values:
             sum += i
         return sum/len(values)
-    
-    
-    
-a = Matrix.rot(pi*0.5)
-b = Vec(1,-1)
-print(a*b)
