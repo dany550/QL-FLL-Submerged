@@ -178,7 +178,7 @@ class Robot:
 
         distance = ((self.avr_motor_angle - pavr_motor_angle)/360)*self.onerot
         angle = radians(self.orientation)
-        self.pos += Vec(cos(angle) * distance,cos(angle) * distance)
+        self.pos += Vec(cos(angle) * distance,sin(angle) * distance)
 
         #if local:
         #    self.local_orientation = self.orientation - self.local_orientation_dif
@@ -258,7 +258,7 @@ class Robot:
         if set_angle == False:
             angle = self.orientation
 
-        initPos = self.pos
+        initPos = Vec(self.pos.x,self.pos.y)
         rotMat = Matrix.rot(radians(angle))
 
         terminal_speed = clamp(terminal_speed, 900, 50)
@@ -266,18 +266,19 @@ class Robot:
         if terminal_speed == 50:
             stop = True
         
-        lastAngle = self.angle
+        lastAngle = Angle(self.angle.x,self.angle.y)
         deltaAngle = 0
         
+        lastOri = self.orientation
         
         while True:       
             self.locate()
-            deltaAngle = self.angle - lastAngle
-            lastAngle = self.angle
-            localPos = rotMat * initPos
+            deltaAngle = Angle(self.angle.L - lastAngle.L,self.angle.R - lastAngle.R)
+
+            localPos = rotMat * (self.pos-initPos)
             new_speed = self.accelerator(Avg(deltaAngle), motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
             
-            gyro_corection = self.local_orientation * g_cons
+            gyro_corection = (self.orientation-lastOri) * g_cons
             shift_corection = localPos.y * corector_cons
             L_speed = new_speed - gyro_corection - shift_corection
             R_speed = new_speed + gyro_corection + shift_corection
@@ -287,13 +288,13 @@ class Robot:
             #motor breaker
             if abs(localPos.x) > abs(distance):
                 if stop == True:
-                    self.Lw.stop()
-                    self.Rw.stop()
+                    self.motor.L.stop()
+                    self.motor.R.stop()
                     L_wheel = False
                     R_wheel = False
                 break
 
-    def straight_position(self, x, y, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Optional[float] = None):
+    def straight_position(self, pos: Vec, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Optional[float] = None):
         """
         extra precise straight movement
         
@@ -316,10 +317,9 @@ class Robot:
 
         #trajectory calculator
         direction = absclamp(direction, 1, 1)
-        x_shift = (x - self.x)*direction
-        y_shift = (y - self.y)*direction
-        distance = sqrt(x_shift**2 + y_shift**2)*direction
-        print(x_shift, y_shift, distance)
+        
+        shift = (pos - self.pos) * direction
+        distance = shift.lenght() * direction
 
         if distance == 0:
             print("start=cíl")
@@ -330,46 +330,49 @@ class Robot:
         L_wheel = True
         R_wheel = True
         motor_angle = (distance*360/self.onerot)
-        L_speed = self.Lw.speed(window=10)
-        R_speed = self.Rw.speed(window=10)
-        avr_initial_speed = (L_speed + R_speed)/2
+        L_speed = self.motor.L.speed(window=10)
+        R_speed = self.motor.R.speed(window=10)
+        avr_initial_speed = Avg([L_speed,R_speed])
         terminal_speed = clamp(terminal_speed, 900, 50)
-        start_angle = degrees(atan2(y_shift, x_shift))
-
-        if start_angle - self.orientation > 180:
-            start_angle -= 360
-        elif start_angle - self.orientation < -180:
-            start_angle += 360
+        start_angle = degrees(atan2(shift.y, shift.x))
 
         self.set_local_origin(0, 0, start_angle)
-
+        
+        initPos = Vec(self.pos.x,self.pos.y)
+        rotMat = Matrix(-start_angle)
+        
+        
         if speed == None:
             speed = self.deaful_speed
-        else:
-            speed = speed
-
+        stop = False
         if terminal_speed == 50:
             stop = True
-        else:
-            stop = False
         
-        while True:       
-            self.locate(local=True)
+        lastAngle = Angle(self.angle.x,self.angle.y)
+        deltaAngle = 0
+        
+        lastOri = self.orientation
+        
+        while True:
+            
+            self.locate()
+            deltaAngle = Angle(self.angle.L - lastAngle.L,self.angle.R - lastAngle.R)
 
-            new_speed = self.accelerator(self.local_avr_motor_angle, motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
-            gyro_corection = self.local_orientation * g_cons
-            shift_corection = self.local_y * corector_cons
+            localPos = rotMat * (self.pos-initPos)
+            
+            new_speed = self.accelerator(Avg(deltaAngle), motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
+            gyro_corection = (self.orientation - lastOri) * g_cons
+            shift_corection = localPos.y * corector_cons
             L_speed = new_speed - gyro_corection - shift_corection
             R_speed = new_speed + gyro_corection + shift_corection
 
             self.motor_driver(L_speed, R_speed, L_wheel, R_wheel)
 
             #motor breaker
-            if abs(self.local_x) > abs(distance):
-                #print("vypínač")
+            if abs(localPos.x) > abs(distance):
                 if stop == True:
-                    self.Lw.stop()
-                    self.Rw.stop()
+                    self.motor.L.stop()
+                    self.motor.R.stop()
                     L_wheel = False
                     R_wheel = False
                 break
