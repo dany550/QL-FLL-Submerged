@@ -1,54 +1,12 @@
-from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor, ColorDistanceSensor
-from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon
-from pybricks.tools import wait, StopWatch, multitask, run_task
+from pybricks.hubs import*
+from pybricks.pupdevices import*
+from pybricks.parameters import*
+from pybricks.tools import*
 from icons import*
 from umath import*
 
-### Mathematical function
-def clamp(value: float, maximum: float, minimum: float):
-    """
-    keeps the value between maximum and minimum
+from mathClasses import*
 
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value between maximum and minimum
-    """
-    if maximum >= value >= minimum:
-        final_value = value
-    elif maximum < value:
-        final_value = maximum
-    elif minimum > value:
-        final_value = minimum
-    return(final_value)
-
-def absclamp(value: float, maximum: float, minimum: float):
-    """
-    keeps absolute value of the value between maximum and minimum
-
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value float
-    """
-    maximum = abs(maximum)
-    minimum = abs(minimum)
-    if maximum >= abs(value) >= minimum:
-        final_value = value
-    elif value == 0:
-        final_value = 0
-    elif maximum < abs(value):
-        final_value = maximum*value/abs(value)
-    elif minimum > abs(value):
-        final_value = minimum*value/abs(value)
-    return(final_value)
 
 def motor_corector(L_angle, R_angle, speed, ratio: Number=1, extra_condition=True):#not shure how useful
     """
@@ -99,8 +57,7 @@ class Robot:
         self.axle_track = axle_track
 
         self.hub = hub
-        self.Lw = left_wheel
-        self.Rw = right_wheel
+        self.motor = WheelMotor(left_wheel,right_wheel)
 
         self.deaful_speed = deaful_speed
         self.acceleration = acceleration
@@ -108,10 +65,8 @@ class Robot:
         self.gear = gear
 
         #probably useless
-        self.x = 0
-        self.y = 0
-        self.Lw_angle = 0
-        self.Rw_angle = 0
+        self.pos = Vec(0,0)
+        self.angle = Angle(0,0,self.motor)
         self.avr_motor_angle = 0
         self.orientation = 0
         self.status_skip = False
@@ -128,7 +83,7 @@ class Robot:
     def add_motor(self, motor: Motor):#
         self.motor = motor
 
-    def set_origin(self, x: float, y: float, orientation: float, field_range: list = [[0,0],[0,0]]):
+    def set_origin(self, x: float, y: float, orientation: float):
         """
         Paprameters:
             - x: float ... in mm
@@ -137,11 +92,9 @@ class Robot:
         """
         self.x = x
         self.y = y
-        self.orientation_dif = self.hub.imu.heading() - orientation
-        print(self.orientation_dif)
-        self.field = field_range
-        self.Lw.reset_angle(0)
-        self.Rw.reset_angle(0)
+        self.orientation_dif = orientation - self.hub.imu.heading()
+        self.motor.L.reset_angle(0)
+        self.motor.R.reset_angle(0)
 
     def set_local_origin(self, x: float, y: float, orientation: float):
         """
@@ -193,7 +146,7 @@ class Robot:
 
         uses: calmp, absclamp
         """
-        
+        # nazdar tome
         acceleration = self.acceleration
         deceleration = self.deceleration
 
@@ -214,34 +167,28 @@ class Robot:
 
     def locate(self, local: bool = False):
         pavr_motor_angle = self.avr_motor_angle
-        self.Lw_angle = self.Lw.angle()
-        self.Rw_angle = self.Rw.angle()
-        self.avr_motor_angle = (self.Lw_angle + self.Rw_angle)/2
+        self.angle.Update()
+        self.avr_motor_angle = (self.angle.L + self.angle.R)/2
         self.get_orientation()
-        
-        #if abs(pavr_motor_angle) - 100 > abs(self.avr_motor_angle):
-        #    motor_dif = self.avr_motor_angle
-        #else:
 
         distance = ((self.avr_motor_angle - pavr_motor_angle)/360)*self.onerot
-        #print(La.angle(), Ra.angle(), distance)
-        #print(sin(alfa), cos(alfa))
         angle = radians(self.orientation)
-        self.x = self.x + cos(angle) * distance
-        self.y = self.y + sin(angle) * distance
+        self.pos += Vec(cos(angle) * distance,sin(angle) * distance)
 
-        if local:
-            self.local_orientation = self.orientation - self.local_orientation_dif
-            self.local_Lw_angle = self.Lw_angle - self.local_initial_Lw_angle
-            self.local_Rw_angle = self.Rw_angle - self.local_initial_Rw_angle
-            self.local_avr_motor_angle = (self.local_Lw_angle + self.local_Rw_angle)/2
-            angle = radians(self.local_orientation)
-            self.local_x = self.local_x + cos(angle) * distance
-            self.local_y = self.local_y + sin(angle) * distance 
+        #if local:
+        #    self.local_orientation = self.orientation - self.local_orientation_dif
+        #    self.localAngle.L -= self.local_initial_Lw_angle
+        #    self.localAngle.R -= self.local_initial_Rw_angle
+        #    self.local_avr_motor_angle = (self.local_Lw_angle + self.local_Rw_angle)/2
+        #    angle = radians(self.local_orientation)
+        #    self.local_x = self.local_x + cos(angle) * distance
+        #    self.local_y = self.local_y + sin(angle) * distance 
 
     def pressme(self, on: bool, color: Color = Color.CYAN):
         """
         highlights central button
+
+        padající trubka
 
         Parameters:
             on: Logic (True - highlight, False - turn light off)
@@ -262,15 +209,15 @@ class Robot:
             - R_wheel: Logic
         """
         if L_wheel == True:
-            self.Lw.run(L_speed)
+            self.motor.L.run(L_speed)
         else:
-            self.Lw.brake()
+            self.motor.L.brake()
         if R_wheel == True:
-            self.Rw.run(R_speed)
+            self.motor.R.run(R_speed)
         else:
-            self.Rw.brake()
+            self.motor.R.brake()
 
-    def straight_g(self, distance: float, terminal_speed: int = 50, set_angle: bool = False, angle: float = 0, skippable: bool = False, speed: Oprional[float] = None):
+    def straight_g(self, distance: float, terminal_speed: int = 50, set_angle: bool = False, angle: float = 0, skippable: bool = False, speed: Optional[float] = None):
         """
         extra precise straight movement
         
@@ -290,62 +237,57 @@ class Robot:
         time = 10
         g_cons = 20
         corector_cons = 10
-        #gyroconstant
 
         self.get_orientation()
+        motor_angle = (distance*360/self.onerot)
+        L_speed = self.motor.L.speed(window=10)
+        R_speed = self.motor.R.speed(window=10)
+        avr_initial_speed = Avg([R_speed,L_speed])
+
         L_wheel = True
         R_wheel = True
-        motor_angle = (distance*360/self.onerot)
-        L_speed = self.Lw.speed(window=10)
-        R_speed = self.Rw.speed(window=10)
-        avr_initial_speed = (L_speed + R_speed)/2
 
         if speed == None:
             speed = self.deaful_speed
-        else:
-            speed = speed
 
         if set_angle == False:
-            start_angle = self.orientation
-        else:
-            start_angle = angle
+            angle = self.orientation
 
-        self.set_local_origin(0, 0, start_angle)
+        initPos = Vec(self.pos.x, self.pos.y)
+        rotMat = Matrix.rot(radians(angle))
 
         terminal_speed = clamp(terminal_speed, 900, 50)
+        stop = False
         if terminal_speed == 50:
             stop = True
-        else:
-            stop = False
+        
+        lastAngle = Angle(self.angle.L,self.angle.R)
+        deltaAngle = 0
+        lastOri = self.orientation
         
         while True:       
-            self.locate(local=True)
-
-            #print(L_angle, R_angle)
-            new_speed = self.accelerator(self.local_avr_motor_angle, motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
-
-            #print(new_speed, ";", start[0], ";", finish[0])
-            gyro_corection = self.local_orientation * g_cons
-            shift_corection = self.local_y * corector_cons
+            self.locate()
+            deltaAngle = Angle(self.angle.L - lastAngle.L,self.angle.R - lastAngle.R)
+            localPos = rotMat * (self.pos - initPos)
+            print(localPos)
+            new_speed = self.accelerator(Avg(deltaAngle), motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
+            gyro_corection = (self.orientation-lastOri) * g_cons
+            shift_corection = localPos.y * corector_cons
             L_speed = new_speed - gyro_corection - shift_corection
             R_speed = new_speed + gyro_corection + shift_corection
 
-            #print(L_speed, R_speed)
-
-            self.motor_driver(L_speed, R_speed, L_wheel, R_wheel)
+            self.motor_driver(L_speed, R_speed, True, True)
 
             #motor breaker
-            if abs(self.local_x) > abs(distance):
-                #print("vypínač")
+            if abs(localPos.x) > abs(distance):
                 if stop == True:
-                    self.Lw.stop()
-                    self.Rw.stop()
+                    self.motor.R.stop()
+                    self.motot.L.stop()
                     L_wheel = False
                     R_wheel = False
                 break
-            #wait(10)
 
-    def straight_position(self, x, y, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None):
+    def straight_position(self, x, y, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Optional[float] = None):
         """
         extra precise straight movement
         
@@ -361,11 +303,6 @@ class Robot:
         if skippable and self.status_skip:
             return None
 
-        if self.field[0][0] - self.field[1][0] != 0:
-            x = (x - self.field[0][0]) % abs(self.field[0][0]- self.field[1][0]) + self.field[0][0]
-        if self.field[0][1] - self.field[1][1] != 0:
-            y = (y - self.field[0][1]) % abs(self.field[0][1]- self.field[1][1]) + self.field[0][1]
-        print(x,y)
         #constants
         time = 10
         g_cons = 20
@@ -431,7 +368,7 @@ class Robot:
                     R_wheel = False
                 break
 
-    def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Oprional[float] = None, gyro_use: bool=True, gyro_reset: bool=False):
+    def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Optional[float] = None, gyro_use: bool=True, gyro_reset: bool=False):
         """
         Parameters:
             - angle: float - in deg - positive = clockwise, negative = counterclockwise, 0 = nowhere
@@ -553,4 +490,7 @@ class Robot:
         
         return
 
-    
+
+def testttt(*values: object, N: int):
+    print(values)
+    print(N)
