@@ -4,4 +4,5 @@ to do:
     3. to develop position anti-fail system (accelerometer based)
     4. to develop mission anti-fail system (optimalization in fail situations)
     5. if time to experiment with multitasking
-    6. to create the best code ever!
+    6. to create audiovisual manager
+    7. to create the best code ever!

@@ -72,6 +72,39 @@ def motor_corector(L_angle, R_angle, speed, ratio: Number=1, extra_condition=Tru
     return R_speed
 
 # Whatever
+class Arm(Motor):
+    def __init__(self, stress=1):
+        """
+        this is expaniso for motor class
+        """
+        self.stress = clamp(abs(stress), 8, 0.25)
+    
+    def align(self, speed):
+        """
+        stops the motor as soon as it meets resistance
+
+        Parameters:
+            - speed: Number - deg/s (+ clockwise, - counterclockwise)
+            - stress: Number - if the motor is under upnormal stress, change stress <0.25; 8>. More stress means higher resistence of motor.
+        """
+        #limiter
+        speed = clamp(abs(speed), 1000, 100)*abs(speed)/speed 
+        self.stress = clamp(abs(self.stress), 8, 0.25)
+        cons = abs(clamp(800/speed, 6, 1.5))*self.stress
+        #cons(constant) = how many times the motor speed has to decrease to stop the motor.
+        time = 300 + abs(speed/4)
+        #time is time until the motor speeds up
+
+        self.run(speed)
+        wait(time)
+
+        while True:
+            arm_speed = abs(self.speed())
+            #print(arm_speed, "/", speed)
+            if arm_speed < abs(speed/cons):
+                self.stop()
+                break
+
 class Robot:
     def __init__(self,
         hub: PrimeHub, 
@@ -93,6 +126,8 @@ class Robot:
             - acceleration: float ... in rot
             - deceleration: float ... in rot
             - gear: float ... (wheel rot/motor rot)
+        
+        # could be rewriten to drivebase extension
         """
         self.wheel_radius = wheel_radius
         self.onerot = 2 * pi * wheel_radius * gear
@@ -116,18 +151,6 @@ class Robot:
         self.orientation = 0
         self.status_skip = False
   
-    def add_ultrasonic(self, sensor: UltrasonicSensor):#
-        self.ultrasonic = sensor
-
-    def add_touch(self, sensor: ForceSensor):#
-        self.touch = sensor
-
-    def add_color(self, sensor: ColorSensor):#
-        self.color = sensor
-
-    def add_motor(self, motor: Motor):#
-        self.motor = motor
-
     def set_origin(self, x: float, y: float, orientation: float, field_range: list = [[0,0],[0,0]]):
         """
         Paprameters:
@@ -157,13 +180,6 @@ class Robot:
         self.local_y = y
         self.local_orientation_dif = orientation
         
-    def checkpoint(self, x: float, y: float):###
-        """
-        Parameters
-        """
-        self.x = x
-        self.y = y
-
     def get_orientation(self):
         """
         replacement for self.hub.imu.heading()
@@ -251,24 +267,16 @@ class Robot:
         else:
             self.hub.light.on(color)
 
-    def motor_driver(self, L_speed: float, R_speed: float, L_wheel: bool, R_wheel: bool):
+    def motor_driver(self, L_speed: float, R_speed: float):
         """
         - this function turns of motor based on logic imput
 
         Parameters
             - L_speed: Number - deg/s
             - R_speed: Number - deg/s
-            - L_wheel: Logic
-            - R_wheel: Logic
         """
-        if L_wheel == True:
-            self.Lw.run(L_speed)
-        else:
-            self.Lw.brake()
-        if R_wheel == True:
-            self.Rw.run(R_speed)
-        else:
-            self.Rw.brake()
+        self.Lw.run(L_speed)
+        self.Rw.run(R_speed)
 
     def straight_g(self, distance: float, terminal_speed: int = 50, set_angle: bool = False, angle: float = 0, skippable: bool = False, speed: Oprional[float] = None):
         """
@@ -293,8 +301,6 @@ class Robot:
         #gyroconstant
 
         self.get_orientation()
-        L_wheel = True
-        R_wheel = True
         motor_angle = (distance*360/self.onerot)
         L_speed = self.Lw.speed(window=10)
         R_speed = self.Rw.speed(window=10)
@@ -332,7 +338,7 @@ class Robot:
 
             #print(L_speed, R_speed)
 
-            self.motor_driver(L_speed, R_speed, L_wheel, R_wheel)
+            self.motor_driver(L_speed, R_speed)
 
             #motor breaker
             if abs(self.local_x) > abs(distance):
@@ -340,8 +346,6 @@ class Robot:
                 if stop == True:
                     self.Lw.stop()
                     self.Rw.stop()
-                    L_wheel = False
-                    R_wheel = False
                 break
             #wait(10)
 
@@ -384,8 +388,6 @@ class Robot:
 
         #setup
         self.get_orientation()
-        L_wheel = True
-        R_wheel = True
         motor_angle = (distance*360/self.onerot)
         L_speed = self.Lw.speed(window=10)
         R_speed = self.Rw.speed(window=10)
@@ -419,7 +421,8 @@ class Robot:
             L_speed = new_speed - gyro_corection - shift_corection
             R_speed = new_speed + gyro_corection + shift_corection
 
-            self.motor_driver(L_speed, R_speed, L_wheel, R_wheel)
+            
+            self.motor_driver(L_speed, R_speed)
 
             #motor breaker
             if abs(self.local_x) > abs(distance):
@@ -427,8 +430,6 @@ class Robot:
                 if stop == True:
                     self.Lw.stop()
                     self.Rw.stop()
-                    L_wheel = False
-                    R_wheel = False
                 break
 
     def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Oprional[float] = None, gyro_use: bool=True, gyro_reset: bool=False):
@@ -552,5 +553,32 @@ class Robot:
                     break
         
         return
+
+    def align_wall(self, speed, time):
+        """
+        - nejsložitější jeď po nějakou dobu nějakou rychlostí.
+
+        Parameters:
+            - speed: Number - deg/s (+ forward, - backward)
+            - time: Number - ms - how far the barrier is
+        """
+        timer = StopWatch()
+        StopWatch.reset(timer)
+        self.set_local_origin(0,0,0)
+        L_speed = speed
+
+        while StopWatch.time(timer) <= time:
+            self.locate(local=True)
+            #motor corector
+            R_speed = motor_corector(self.local_Lw_angle, self.local_Rw_angle, speed)
+
+            self.Lw.run(L_speed)
+            self.Rw.run(R_speed)
+        self.Lw.stop()
+        self.Rw.stop()
+
+    def gandalf(self):
+        while True:
+            self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
 
     
