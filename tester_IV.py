@@ -13,5 +13,3 @@ while True:
         print(Ul.distance())
     ppressed = list(pressed)
     wait(10)
-    puncher = Arm(Port.A)
-    puncher.

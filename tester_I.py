@@ -1,22 +1,41 @@
 # 3rd - last step in program piramid
 from tools_II import *
-
+from pybricks.iodevices import XboxController
 print("ok ok ok ok ok ok ok ok ok ok ok ok ok ok ok ok")
 #this file is designt for testing
-
 
 hub = PrimeHub()
 Lw = Motor(Port.F, Direction.COUNTERCLOCKWISE)
 Rw = Motor(Port.B)
 bot = Robot(hub, 27.9, 158, Lw, Rw)
 bot.set_origin(0,0,270)
-#bot.straight_g(100, set_angle=True, angle=270)
-#bot.turn(90, 0)
-bot.straight_position(0, 100, 1)
 
-print(hub.imu.heading())
-wait(1000)
-print(hub.imu.heading())
+remote = XboxController()
+
+timer = StopWatch()
+time = 0
+x = 0
+y = 0
+speed = 0
+
+while True:
+    pressed = remote.buttons.pressed()
+    Ldir = remote.joystick_left()
+    Rdir = remote.joystick_right()
+    bot.Lw.run((Ldir[1]+Ldir[0])*10 + Rdir[1]+Rdir[0])
+    bot.Rw.run((Ldir[1]-Ldir[0])*10 + Rdir[1]-Rdir[0])
+    acceleration = hub.imu.acceleration(Axis.Y)
+
+    if abs(acceleration) > abs(bot.Lw.speed()+bot.Rw.speed())*3+3000:
+        hub.speaker.beep()
+    
+
+
+    if Button.A in pressed:
+        print()
+    if Button.B in pressed:
+        print()
+
 
 
 field = [[0,0],[2000,1140]]

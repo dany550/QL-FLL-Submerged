@@ -1,6 +1,6 @@
 from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor, ColorDistanceSensor
-from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon
+from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon, Axis
 from pybricks.tools import wait, StopWatch, multitask, run_task
 from icons import*
 from umath import*
@@ -73,10 +73,26 @@ def motor_corector(L_angle, R_angle, speed, ratio: Number=1, extra_condition=Tru
 
 # Whatever
 class Arm(Motor):
-    def __init__(self, stress=1):
+    def __init__(self, port: Port, positive_direction: Direction=Direction.CLOCKWISE, gears: Optional[Union[Collection[int], Collection[Collection[int]]]]=None, reset_angle: bool=True, profile: Number=None, stress: float =1):
         """
         this is expaniso for motor class
+
+        Parameters:
+            - port: Port Port to which the motor is connected. 
+            - positive_direction: Direction Which direction the motor should turn when you give a positive speed value or angle. 
+            - gears: list List of gears linked to the motor. The gear connected to the motor comes first and the gear connected to the output comes last.
+                For example: ``[12, 36]`` represents a gear train with a
+                12-tooth gear connected to the motor and a 36-tooth gear
+                connected to the output. Use a list of lists for multiple
+                gear trains, such as ``[[12, 36], [20, 16, 40]]``.
+                When you specify a gear train, all motor commands and settings
+                are automatically adjusted to account for the resulting gear
+                ratio. The motor direction remains unchanged by this.
+            - reset_angle: bool Choose True to reset the rotation sensor value to the absolute marker angle (between -180 and 179). Choose False to keep the current value, so your program knows where it left off last time. 
+            - profile: Number, deg Precision profile. This is the approximate position tolerance in degrees that is acceptable in your application. A lower value gives more precise but more erratic movement; a higher value gives less precise but smoother movement. If no value is given, a suitable profile for this motor type will be selected automatically (about 11 degrees).
+            - stress: float
         """
+        super().__init__(port: Port, positive_direction: Direction=Direction.CLOCKWISE, gears: Optional[Union[Collection[int], Collection[Collection[int]]]]=None, reset_angle: bool=True, profile: Number=None)
         self.stress = clamp(abs(stress), 8, 0.25)
     
     def align(self, speed):
@@ -104,6 +120,22 @@ class Arm(Motor):
             if arm_speed < abs(speed/cons):
                 self.stop()
                 break
+
+class Ultrasonic(UltrasonicSensor):
+    def __init__(self, port: Port, x_shift: float, y_shift: float, orientation: float):
+        """
+        this is expansion of UltrasonicSensor class designed of locating
+
+        Parameters:
+            - port: Port Port to which the sensor is connected.
+            - x_shift: float
+            - y_shift: float
+            - orientation: float
+        """
+        super().__init__(port: Port)
+        self.x_shift = x_shift
+        self.y_shift = y_shift
+        self.orientation = orientation
 
 class Robot:
     def __init__(self,
@@ -142,6 +174,9 @@ class Robot:
         self.deceleration = deceleration
         self.gear = gear
 
+        #constants
+        
+
         #probably useless
         self.x = 0
         self.y = 0
@@ -150,7 +185,7 @@ class Robot:
         self.avr_motor_angle = 0
         self.orientation = 0
         self.status_skip = False
-  
+
     def set_origin(self, x: float, y: float, orientation: float, field_range: list = [[0,0],[0,0]]):
         """
         Paprameters:
@@ -185,6 +220,9 @@ class Robot:
         replacement for self.hub.imu.heading()
         """
         self.orientation = self.hub.imu.heading() - self.orientation_dif
+
+    def get_acceleration(self):
+        self.acceleration = self.hub.imu.acceleration(Axis.Y)
 
     def accelerator(
         self,
@@ -229,6 +267,9 @@ class Robot:
         return new_speed
 
     def locate(self, local: bool = False):
+        """
+        # accelerometric check might be added (because of big accelerometric uncertanty it'll by recognizing unfortunate deccelerations)
+        """
         pavr_motor_angle = self.avr_motor_angle
         self.Lw_angle = self.Lw.angle()
         self.Rw_angle = self.Rw.angle()
@@ -554,7 +595,27 @@ class Robot:
         
         return
 
-    def align_wall(self, speed, time):
+    def align_wall_a(self, speed):
+        """
+         ### probably not finished
+        Parameters:
+            - speed: Number - deg/s (+ forward, - backward)
+        """
+        self.set_local_origin(0,0,0)
+        L_speed = speed
+
+        while self.acceleration < 3000 + abs(speed) * 5:
+            self.locate(local=True)
+            self.get_acceleration()
+            #motor corector
+            R_speed = motor_corector(self.local_Lw_angle, self.local_Rw_angle, speed)
+
+            self.Lw.run(L_speed)
+            self.Rw.run(R_speed)
+        self.Lw.stop()
+        self.Rw.stop()
+
+    def align_wall_t(self, speed, time):
         """
         - nejsložitější jeď po nějakou dobu nějakou rychlostí.
 
@@ -577,8 +638,13 @@ class Robot:
         self.Lw.stop()
         self.Rw.stop()
 
+    def ultralocate(self, ul: Ultrasonic, x: float, y: float):
+        """
+        being designed!
+        """
+        return None
+
     def gandalf(self):
         while True:
             self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
 
-    

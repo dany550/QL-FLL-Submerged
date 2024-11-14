@@ -11,5 +11,4 @@ bot = Robot(hub, 27.9, 158, Lw, Rw,)
 bot.set_origin(0,0,0)
 print(bot.x, bot.y, bot.avr_motor_angle, bot.Lw.angle(), bot.Rw.angle())
 
-hub.display.icon(lime)
-wait(100000)
+bot.align_wall_a(500)
