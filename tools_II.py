@@ -92,7 +92,7 @@ class Arm(Motor):
             - profile: Number, deg Precision profile. This is the approximate position tolerance in degrees that is acceptable in your application. A lower value gives more precise but more erratic movement; a higher value gives less precise but smoother movement. If no value is given, a suitable profile for this motor type will be selected automatically (about 11 degrees).
             - stress: float
         """
-        super().__init__(port: Port, positive_direction: Direction=Direction.CLOCKWISE, gears: Optional[Union[Collection[int], Collection[Collection[int]]]]=None, reset_angle: bool=True, profile: Number=None)
+        super().__init__(self, port, positive_direction, gears, reset_angle, profile)
         self.stress = clamp(abs(stress), 8, 0.25)
     
     def align(self, speed):
@@ -127,17 +127,18 @@ class Ultrasonic(UltrasonicSensor):
         this is expansion of UltrasonicSensor class designed of locating
 
         Parameters:
-            - port: Port Port to which the sensor is connected.
+            - port: Port ... Port to which the sensor is connected.
             - x_shift: float
             - y_shift: float
             - orientation: float
         """
-        super().__init__(port: Port)
+        super(UltrasonicSensor).__init__(port)
         self.x_shift = x_shift
         self.y_shift = y_shift
         self.orientation = orientation
 
 class Robot:
+    #setup funcrions
     def __init__(self,
         hub: PrimeHub, 
         wheel_radius: float, 
@@ -147,7 +148,8 @@ class Robot:
         deaful_speed: int = 900, 
         acceleration: float = 1, 
         deceleration: float = 1, 
-        gear: float = 1):
+        gear: float = 1,
+        extra_task: object = None):
         """
         Parameters:
             - wheel_radius: float ... in mm
@@ -185,6 +187,9 @@ class Robot:
         self.avr_motor_angle = 0
         self.orientation = 0
         self.status_skip = False
+        self.interupt = False
+
+        self.extra_task = extra_task
 
     def set_origin(self, x: float, y: float, orientation: float, field_range: list = [[0,0],[0,0]]):
         """
@@ -195,8 +200,7 @@ class Robot:
         """
         self.x = x
         self.y = y
-        self.orientation_dif = self.hub.imu.heading() - orientation
-        print(self.orientation_dif)
+        self.orientation_dif = orientation - self.hub.imu.heading()
         self.field = field_range
         self.Lw.reset_angle(0)
         self.Rw.reset_angle(0)
@@ -214,12 +218,13 @@ class Robot:
         self.local_x = x
         self.local_y = y
         self.local_orientation_dif = orientation
-        
+    
+    #looppart functions
     def get_orientation(self):
         """
         replacement for self.hub.imu.heading()
         """
-        self.orientation = self.hub.imu.heading() - self.orientation_dif
+        self.orientation = self.orientation_dif - self.hub.imu.heading()
 
     def get_acceleration(self):
         self.acceleration = self.hub.imu.acceleration(Axis.Y)
@@ -296,6 +301,18 @@ class Robot:
             self.local_x = self.local_x + cos(angle) * distance
             self.local_y = self.local_y + sin(angle) * distance 
 
+    def motor_driver(self, L_speed: float, R_speed: float):
+        """
+        - this function turns of motor based on logic imput
+
+        Parameters
+            - L_speed: Number - deg/s
+            - R_speed: Number - deg/s
+        """
+        self.Lw.run(L_speed)
+        self.Rw.run(R_speed)
+
+    #instant functions
     def pressme(self, on: bool, color: Color = Color.CYAN):
         """
         highlights central button
@@ -308,18 +325,8 @@ class Robot:
         else:
             self.hub.light.on(color)
 
-    def motor_driver(self, L_speed: float, R_speed: float):
-        """
-        - this function turns of motor based on logic imput
-
-        Parameters
-            - L_speed: Number - deg/s
-            - R_speed: Number - deg/s
-        """
-        self.Lw.run(L_speed)
-        self.Rw.run(R_speed)
-
-    def straight_g(self, distance: float, terminal_speed: int = 50, set_angle: bool = False, angle: float = 0, skippable: bool = False, speed: Oprional[float] = None):
+    #complex motion functions
+    def straight_g(self, distance: float, terminal_speed: int = 50, set_angle: bool = False, angle: float = 0, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
         """
         extra precise straight movement
         
@@ -330,6 +337,7 @@ class Robot:
             - terminal_speed: Number - in deg/s
             - set_angle: bool
             - angle: Number - in deg
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         
         uses: accelerator, motor_controler, motor_driver, clamp, absclamp
         """
@@ -337,9 +345,10 @@ class Robot:
             return None
 
         time = 10
-        g_cons = 20
-        corector_cons = 10
-        #gyroconstant
+        g_cons = -20
+        # gyrocorector constant (negative because reversed gyro)
+        corector_cons = 10 * distance/abs(distance)
+        # shiftcorector constant
 
         self.get_orientation()
         motor_angle = (distance*360/self.onerot)
@@ -371,34 +380,43 @@ class Robot:
             #print(L_angle, R_angle)
             new_speed = self.accelerator(self.local_avr_motor_angle, motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
 
-            #print(new_speed, ";", start[0], ";", finish[0])
+            #print(new_speed, ";", start[0])
             gyro_corection = self.local_orientation * g_cons
             shift_corection = self.local_y * corector_cons
             L_speed = new_speed - gyro_corection - shift_corection
             R_speed = new_speed + gyro_corection + shift_corection
 
-            #print(L_speed, R_speed)
+            #print(gyro_corection, shift_corection)
 
             self.motor_driver(L_speed, R_speed)
 
+            if task:
+                task()
+            
+            if self.extra_task:
+                self.extra_task()
+
             #motor breaker
-            if abs(self.local_x) > abs(distance):
+            if abs(self.local_x) > abs(distance) or self.interupt:
                 #print("vypínač")
                 if stop == True:
                     self.Lw.stop()
                     self.Rw.stop()
-                break
-            #wait(10)
 
-    def straight_position(self, x, y, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None):
+                break
+           
+    def straight_position(self, x: float, y: float, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
         """
         extra precise straight movement
         
         Parameters:
-            - finish: list [x, y] - in mm
+            - x: float
+            - y: float
             - direction: int
-            - speed: Number - in deg/s
             - terminal_speed: Number - in deg/s
+            - skippable: bool
+            - speed: Number - in deg/s
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         
         uses: accelerator, motor_controler, motor_driver, clamp, absclamp
         """
@@ -410,10 +428,11 @@ class Robot:
             x = (x - self.field[0][0]) % abs(self.field[0][0]- self.field[1][0]) + self.field[0][0]
         if self.field[0][1] - self.field[1][1] != 0:
             y = (y - self.field[0][1]) % abs(self.field[0][1]- self.field[1][1]) + self.field[0][1]
-        print(x,y)
+        #print(x,y)
         #constants
         time = 10
-        g_cons = 20
+        g_cons = -20
+        # gyrocorector constant (negative because reversed gyro)
         corector_cons = 10 * direction
 
         #trajectory calculator
@@ -421,7 +440,7 @@ class Robot:
         x_shift = (x - self.x)*direction
         y_shift = (y - self.y)*direction
         distance = sqrt(x_shift**2 + y_shift**2)*direction
-        print(x_shift, y_shift, distance)
+        #print(x_shift, y_shift, distance)
 
         if distance == 0:
             print("start=cíl")
@@ -452,10 +471,8 @@ class Robot:
             stop = True
         else:
             stop = False
-        
         while True:       
             self.locate(local=True)
-
             new_speed = self.accelerator(self.local_avr_motor_angle, motor_angle, speed, initial_speed=avr_initial_speed, terminal_speed=terminal_speed)
             gyro_corection = self.local_orientation * g_cons
             shift_corection = self.local_y * corector_cons
@@ -465,15 +482,20 @@ class Robot:
             
             self.motor_driver(L_speed, R_speed)
 
+            if task:
+                task()
+            if self.extra_task:
+                self.extra_task()
+
             #motor breaker
-            if abs(self.local_x) > abs(distance):
+            if abs(self.local_x) > abs(distance) or self.interupt:
                 #print("vypínač")
                 if stop == True:
                     self.Lw.stop()
                     self.Rw.stop()
                 break
 
-    def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Oprional[float] = None, gyro_use: bool=True, gyro_reset: bool=False):
+    def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Oprional[float] = None, gyro_use: bool=True, gyro_reset: bool=False, task: object = None):
         """
         Parameters:
             - angle: float - in deg - positive = clockwise, negative = counterclockwise, 0 = nowhere
@@ -483,6 +505,7 @@ class Robot:
             - gyro_use: bool - do you want to use gyro? (yes you want, everybody wants)
             - gyro_reset: bool - reset gyro or not?
             - speed: Number - in deg/s - it's recommended to slow down if the radius is too small
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         """
         #angle corector
         if skippable and self.status_skip:
@@ -502,6 +525,7 @@ class Robot:
             speed = speed
         
         #speed calculator
+        radius = - radius
         if radius >= 0:
             Rw_ratio = clamp((radius - self.axle_track/2)/abs(radius + self.axle_track/2), 1, -1)
         else:
@@ -513,10 +537,11 @@ class Robot:
         #print(Lw_ratio, Rw_ratio, Lw_ratio*Rw_ratio)
 
         #setup
-        cons = clamp(4000/speed + abs(radius)/10 ,50,5)
+        cons = -clamp(4000/speed + abs(radius)/10 ,50,5)
+        # gyrocorector constant (negative because reversed gyro)
         trajectory = (abs(radius) + self.axle_track)*pi
         motor_angle = (trajectory/self.onerot) * (angle - motor_initial_angle)
-        ### motor angle calculaton concept not vetrified not vetrified
+        ### motor angle calculaton concept not vetrified
         
         if gyro_use == True:
             gyro_error = False
@@ -588,23 +613,27 @@ class Robot:
                 self.Rw.run(R_motor_speed * Rw_ratio)
 
                 #break
-                if (abs(L_motor_angle) + abs(R_motor_angle)) / 2 > motor_angle:
+                if (abs(L_motor_angle) + abs(R_motor_angle)) / 2 > motor_angle or self.interupt:
                     self.Lw.stop()
                     self.Rw.stop()
                     break
-        
-        return
+            
+            if task:
+                task()
+            if self.extra_task:
+                self.extra_task()
 
-    def align_wall_a(self, speed):
+    def align_wall_a(self, speed, task: object = None):
         """
          ### probably not finished
         Parameters:
             - speed: Number - deg/s (+ forward, - backward)
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         """
         self.set_local_origin(0,0,0)
         L_speed = speed
 
-        while self.acceleration < 3000 + abs(speed) * 5:
+        while self.acceleration < 3000 + abs(speed) * 5 and not self.interupt:
             self.locate(local=True)
             self.get_acceleration()
             #motor corector
@@ -612,39 +641,53 @@ class Robot:
 
             self.Lw.run(L_speed)
             self.Rw.run(R_speed)
+
+            if task:
+                task()
+            if self.extra_task:
+                self.extra_task()
+
         self.Lw.stop()
         self.Rw.stop()
 
-    def align_wall_t(self, speed, time):
+    def align_wall_t(self, speed, time, task: object = None):
         """
         - nejsložitější jeď po nějakou dobu nějakou rychlostí.
 
         Parameters:
             - speed: Number - deg/s (+ forward, - backward)
             - time: Number - ms - how far the barrier is
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         """
         timer = StopWatch()
         StopWatch.reset(timer)
         self.set_local_origin(0,0,0)
         L_speed = speed
 
-        while StopWatch.time(timer) <= time:
+        while StopWatch.time(timer) <= time and not self.interupt:
             self.locate(local=True)
             #motor corector
             R_speed = motor_corector(self.local_Lw_angle, self.local_Rw_angle, speed)
 
             self.Lw.run(L_speed)
             self.Rw.run(R_speed)
+            
+            if task:
+                task()
+            if self.extra_task:
+                self.extra_task()
+
         self.Lw.stop()
         self.Rw.stop()
 
+    #composite complex functions
     def ultralocate(self, ul: Ultrasonic, x: float, y: float):
         """
         being designed!
         """
         return None
 
+    #neverending functions
     def gandalf(self):
         while True:
             self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
-

@@ -1,5 +1,7 @@
 from umath import*
 
+# Now useless
+
 class Vec:
     def __init__(self,x,y):
         self.x = x
