@@ -10,7 +10,7 @@ Rw = Motor(Port.B)
 La = Motor(Port.C, gears=[12, 36])
 Ra = Motor(Port.D)
 bot = Robot(hub, 27.9, 158, Lw, Rw)
-bot.set_origin(0,0,270)
+bot.set_origin(140,110,90)
 La.reset_angle(0)
 
 remote = XboxController()
