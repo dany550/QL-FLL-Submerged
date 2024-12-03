@@ -6,18 +6,22 @@ from icons import*
 from umath import*
 
 ### Mathematical function
-def sign(value: float):
-    if value > 0:
-        sign = 1
-    elif value == 0:
+def sign(value: float, zero: bool = True):
+    if value == 0 and zero:
         sign = 0
-    else:
+    elif value < 0:
         sign = -1
+    else:
+        sign = 1
     return sign
 
 def avrg(*value: float):
     avrg = sum(value)/len(value)
     return avrg
+
+def angle_mod(value: float):
+    value = (value + 180) % 360 - 180
+    return value
 
 def clamp(value: float, maximum: float, minimum: float):
     """
@@ -53,15 +57,15 @@ def absclamp(value: float, maximum: float, minimum: float):
     """
     maximum = abs(maximum)
     minimum = abs(minimum)
-    sign = sign(value)
+    vsign = sign(value)
     if maximum >= abs(value) >= minimum:
         final_value = value
     elif value == 0:
         final_value = 0
     elif maximum < abs(value):
-        final_value = maximum*sign
+        final_value = maximum*vsign
     elif minimum > abs(value):
-        final_value = minimum*sign
+        final_value = minimum*vsign
     return final_value
 
 def motor_corector(L_angle, R_angle, speed, ratio: Number=1, extra_condition=True):#not shure how useful
@@ -118,7 +122,7 @@ class Arm(Motor):
             - stress: Number - if the motor is under upnormal stress, change stress <0.25; 8>. More stress means higher resistence of motor.
         """
         #limiter
-        speed = clamp(abs(speed), 1000, 100)*sing(speed) 
+        speed = clamp(abs(speed), 1000, 100)*sign(speed) 
         self.stress = clamp(abs(self.stress), 8, 0.25)
         cons = abs(clamp(800/speed, 6, 1.5))*self.stress
         #cons(constant) = how many times the motor speed has to decrease to stop the motor.
@@ -173,7 +177,7 @@ class Robot:
             - deaful_speed: int ... in deg/s
             - acceleration: float ... in rot
             - deceleration: float ... in rot
-            - gear: float ... (wheel rot/motor rot)
+            - gear: float ... (wheel rot/motor rot) #may be improved...
         
         # could be rewriten to drivebase extension
         """
@@ -204,6 +208,9 @@ class Robot:
         self.interupt = False
 
         self.extra_task = extra_task
+
+    def add_arms(self, *arm: Arm):
+        self.arms = arm
 
     def set_origin(self, x: float, y: float, orientation: float, field_range: list = [[0,0],[0,0]]):
         """
@@ -240,6 +247,7 @@ class Robot:
         replacement for self.hub.imu.heading()
         """
         self.orientation = self.orientation_dif - self.hub.imu.heading()
+        return self.orientation
 
     def get_acceleration(self):
         self.acceleration = self.hub.imu.acceleration(Axis.Y)
@@ -274,7 +282,7 @@ class Robot:
         if deceleration == 0 or motor_angle == 0:
             max_speed = speed
         else:
-            max_speed = absclamp((motor_angle - actual_motor_angle)/(deceleration*0.36), speed, terminal_speed)
+            max_speed = absclamp((motor_angle - actual_motor_angle)/(deceleration*0.36), speed, terminal_speed) #0.36 = 360/1000; 1000 = max speed
 
         if acceleration == 0:
             new_speed = max_speed
@@ -289,8 +297,9 @@ class Robot:
         new_speed = self.accelerator(self.local_avr_motor_angle, motor_angle, speed, initial_speed=self.avr_initial_speed, terminal_speed=terminal_speed)
         gyro_corection = self.local_orientation * g_cons
         shift_corection = self.local_y * corector_cons
-        self.L_speed = new_speed + gyro_corection - shift_corection
-        self.R_speed = new_speed - gyro_corection + shift_corection  
+        self.L_speed = new_speed + gyro_corection + shift_corection
+        self.R_speed = new_speed - gyro_corection - shift_corection  
+        #print(new_speed, ";", self.L_speed, ";", self.R_speed)
 
     def locate(self, local: bool = False):
         """
@@ -371,10 +380,10 @@ class Robot:
             return None
 
         g_cons = 20 # gyrocorector constant
-        corector_cons = 10 * sing(distance) # shiftcorector constant
+        corector_cons = 10 * sign(distance) # shiftcorector constant
         motor_angle = (distance*360/self.onerot)
         terminal_speed = clamp(terminal_speed, 900, 50)
-        stop = terminal_speed == 50:
+        stop = terminal_speed == 50
         if speed == None:
             speed = self.deaful_speed
 
@@ -400,7 +409,7 @@ class Robot:
                 self.motor_braker(stop)
                 break
            
-    def straight_position(self, x: float, y: float, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
+    def straight_position(self, x: float, y: float, direction: int = 0, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
         """
         extra precise straight movement
         
@@ -419,40 +428,38 @@ class Robot:
         if skippable and self.status_skip:
             return None
 
-        if self.field[0][0] - self.field[1][0] != 0:
+        #setup
+        g_cons = 20 # gyrocorector constant (its not recomended to set below 2 and above 50)
+        corector_cons = 10
+        if speed == None: #may be modified
+            speed = self.deaful_speed
+        terminal_speed = clamp(terminal_speed, 1000, 50)
+        stop = terminal_speed == 50
+        start_angle = self.get_orientation()
+        if self.field[0][0] - self.field[1][0] != 0: # to incorporate matrix magic
             x = (x - self.field[0][0]) % abs(self.field[0][0]- self.field[1][0]) + self.field[0][0]
         if self.field[0][1] - self.field[1][1] != 0:
             y = (y - self.field[0][1]) % abs(self.field[0][1]- self.field[1][1]) + self.field[0][1]
-
+        x_shift = x - self.x
+        y_shift = y - self.y
+        
         #trajectory calculator
-        direction = absclamp(direction, 1, 1)
-        x_shift = (x - self.x)*direction
-        y_shift = (y - self.y)*direction
+        track_angle = angle_mod(degrees(atan2(y_shift, x_shift)))
+        if direction == 0:
+            direction = sign(90 - abs(angle_mod(track_angle - start_angle)), zero=False)
+        else:
+            direction = clamp(direction, 1, -1)
+        track_angle = track_angle * direction
         distance = sqrt(x_shift**2 + y_shift**2)*direction
         if distance == 0:
             print("start=cíl")
             return None 
-
-        #setup
-        g_cons = 20 # gyrocorector constant (negative because reversed gyro)
-        corector_cons = 10 * direction
         motor_angle = (distance*360/self.onerot)
-        terminal_speed = clamp(terminal_speed, 900, 50)
-        start_angle = degrees(atan2(y_shift, x_shift))
-        stop = terminal_speed == 50
-        if speed == None:
-            speed = self.deaful_speed
-
-        self.get_orientation()
-        if start_angle - self.orientation > 180:
-            start_angle -= 360
-        elif start_angle - self.orientation < -180:
-            start_angle += 360
-        self.set_local_origin(0, 0, start_angle)
+        self.set_local_origin(0, 0, track_angle)
 
         while True:
             self.locate(local=True)
-            self.speed_calculator(motor_angle, speed, terminal_speed, g_cons, corector_cons)
+            self.speed_calculator(motor_angle, speed, terminal_speed, g_cons, corector_cons*direction)
             self.motor_driver(self.L_speed, self.R_speed)
 
             if task:
@@ -461,37 +468,37 @@ class Robot:
                 self.extra_task()
 
             #motor breaker
-            if abs(self.local_x) > abs(distance) or self.interupt:
+            if abs(self.local_x) > abs(distance) or self.interupt: 
                 self.motor_braker(stop)
                 break
 
-    def turn(self, angle: float, radius: float, stop: bool=True, skippable: bool = False, speed: Oprional[float] = None, gyro_use: bool=True, gyro_reset: bool=False, task: object = None):
+    def turn(self, angle: float, radius: float, terminal_speed: int = 50, skippable: bool = False, speed: Oprional[float] = None, gyro_reset: bool=False, task: object = None):
         """
+        check might be added (by use of abs avr actual motor angle)
+        ### to update description
         Parameters:
             - angle: float - in deg - positive = clockwise, negative = counterclockwise, 0 = nowhere
             - radius: float - in mm - positive = left, negative = right, 0 = on site, Robot_name.onerot/2 = by one wheel 
-            - stop: bool - than stop or not?
             - skippable: bool - if True, it'll be skipped
             - gyro_use: bool - do you want to use gyro? (yes you want, everybody wants)
             - gyro_reset: bool - reset gyro or not?
             - speed: Number - in deg/s - it's recommended to slow down if the radius is too small
             - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         """
-        #angle corector
         if skippable and self.status_skip:
             return None
 
-        self.get_orientation()
-        if gyro_reset == True:
-            start_angle = self.orientation
-            motor_initial_angle = 0
-        else:
+        if gyro_reset:
             start_angle = 0
-            motor_initial_angle = self.orientation
+        else:
+            start_angle = self.get_orientation()
+        terminal_speed = clamp(terminal_speed, 1000, 50)
+        stop = terminal_speed == 50
+        #angle = angle_mod(angle)
+        ori_diff = angle - start_angle #in deg
+        motor_angle = (abs(radius) + self.axle_track) * pi * ori_diff / self.onerot #average absolute trajectory in deg
+        self.set_local_origin(0, 0, start_angle)
 
-        if speed == None:
-            speed = self.deaful_speed
-        
         #speed calculator
         if radius >= 0:
             Lw_ratio = clamp((radius - self.axle_track/2)/abs(radius + self.axle_track/2), 1, -1)
@@ -501,79 +508,89 @@ class Robot:
             Rw_ratio = clamp((radius + self.axle_track/2)/abs(radius - self.axle_track/2), 1, -1)
         else:
             Rw_ratio = 1
+        if speed == None:
+            speed = self.deaful_speed
         #print(Lw_ratio, Rw_ratio, Lw_ratio*Rw_ratio)
 
-        #setup
-        cons = -clamp(4000/speed + abs(radius)/10 ,50,5) # gyrocorector constant (negative because reversed gyro)
-        trajectory = (abs(radius) + self.axle_track)*pi
-        motor_angle = (trajectory/self.onerot) * (angle - motor_initial_angle)
-        ### motor angle calculaton concept not vetrified
-        
-        if gyro_use == True:
-            gyro_error = False
-        else:
-            gyro_error = True
-
-        #motor setup
-        self.set_local_origin(0, 0, 0)
-
-        #main loop
         while True:
-            #reeder
             self.locate(True)
-            angle_dif = angle - self.orientation
-            
-            abs_motor_angle = abs(self.local_Lw_angle) + abs(self.local_Rw_angle)
-            new_speed = self.accelerator(abs_motor_angle, 0, speed, initial_speed=self.avr_initial_speed)
-            #print(self.orientation, angle_dif)
-            #core
-            if gyro_error == False:
-                #speed calculator
-                if stop == True:
-                    motor_speed = absclamp(angle_dif*cons, new_speed, 2)
-                else:
-                    motor_speed = speed * sign(angle_dif)
-                #print(motor_speed)
+            actual_motor_angle = (abs(radius) + self.axle_track) * pi * self.local_orientation / self.onerot #average absolute trajectory in deg
+            motor_speed = self.accelerator(actual_motor_angle, motor_angle, speed, 50, self.avr_initial_speed, terminal_speed)
+            self.motor_driver(motor_speed * Lw_ratio, motor_speed * Rw_ratio)
+            #print(motor_angle, ";", actual_motor_angle)
 
-                self.motor_driver(motor_speed * Lw_ratio, motor_speed * Rw_ratio)
-
-                #motor braker
-                if abs(abs(angle)-abs(self.orientation))<=1:
-                    self.motor_braker(stop)
-                    break
-
-                #check
-                if abs(abs_motor_angle) > abs(motor_angle) + 3600:
-                    #print(L_motor_angle, "/", motor_angle)
-                    for i in range(4):
-                        self.hub.speaker.beep(500, 50)
-                        wait(50)
-                    gyro_error = True
-                    stop = True
-
-            #error
-            else:
-                if stop == True:
-                    L_motor_speed = absclamp((motor_angle - L_motor_angle) * cons, new_speed, 5)
-                    #taky špatně
-                else:
-                    L_motor_speed = new_speed
-                
-                #motor controler
-                R_motor_speed = motor_corector(L_motor_angle, R_motor_angle, L_motor_speed)
-                #nemme L_angle a R_angle
-            
-                self.motor_driver(motor_speed * Lw_ratio, motor_speed * Rw_ratio)
-
-                #break
-                if avrg(abs(L_motor_angle),abs(R_motor_angle)) > motor_angle or self.interupt:
-                    self.motor_braker(True)
-                    break
-            
             if task:
                 task()
             if self.extra_task:
                 self.extra_task()
+
+            #motor braker
+            if abs(abs(angle)-abs(self.orientation))<=1:
+                if stop:
+                    self.motor_braker(stop)
+                break
+
+    def get_to(self, x: float, y: float , orientation: float, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
+        """
+        to be developed...
+        extra precise straight movement
+        
+        Parameters:
+            - x: float
+            - y: float
+            - direction: int
+            - terminal_speed: Number - in deg/s
+            - skippable: bool
+            - speed: Number - in deg/s
+            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
+        
+        uses: accelerator, motor_controler, motor_driver, clamp, absclamp
+        """
+        if skippable and self.status_skip:
+            return None
+
+        #setup
+        g_cons = 20 # gyrocorector constant (its not recomended to set below 2 and above 50)
+        corector_cons = 10
+        if speed == None: #may be modified
+            speed = self.deaful_speed
+        terminal_speed = clamp(terminal_speed, 1000, 50)
+        stop = terminal_speed == 50
+        start_angle = self.get_orientation()
+        aim_angle = angle_mod(orientation)
+        if self.field[0][0] - self.field[1][0] != 0: # to incorporate matrix magic
+            x = (x - self.field[0][0]) % abs(self.field[0][0]- self.field[1][0]) + self.field[0][0]
+        if self.field[0][1] - self.field[1][1] != 0:
+            y = (y - self.field[0][1]) % abs(self.field[0][1]- self.field[1][1]) + self.field[0][1]
+        x_shift = x - self.x
+        y_shift = y - self.y
+        
+        #trajectory calculator
+        track_angle = angle_mod(degrees(atan2(y_shift, x_shift)))
+        ori_diff = abs(angle_mod(track_angle - start_angle) + angle_mod(track_angle - aim_angle))
+        direction = sign(180 - ori_diff, zero=False)
+        track_angle = track_angle * direction
+        distance = sqrt(x_shift**2 + y_shift**2)*direction
+        if distance == 0:
+            print("start=cíl")
+            return None 
+        motor_angle = (distance*360/self.onerot)
+        self.set_local_origin(0, 0, track_angle)
+
+        while True:
+            self.locate(local=True)
+            self.speed_calculator(motor_angle, speed, terminal_speed, g_cons, corector_cons*direction)
+            self.motor_driver(self.L_speed, self.R_speed)
+
+            if task:
+                task()
+            if self.extra_task:
+                self.extra_task()
+
+            #motor breaker
+            if abs(self.local_x) > abs(distance) or self.interupt: 
+                self.motor_braker(stop)
+                break
 
     def align_wall_a(self, speed, task: object = None):
         """
@@ -633,3 +650,20 @@ class Robot:
     def gandalf(self):
         while True:
             self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
+
+class Mission:
+    def __init__(self, robot: Robot, x: float, y: flaot, orientation: float, arm_setup: list, setup_speed: int = 1000):
+        self.robot = robot
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+        self.arm_setup = arm_setup
+        self.setup_speed = setup_speed
+    
+    def start(self):
+        for i in range(len(self.robot.arms)):
+            arm = self.robot.arms[i]
+            setup = self.arm_setup[i]
+            arm.run_target(self.setup_speed, setup, wait=False)
+        self.robot.straight_position(self.x, self.y)
+        self.robot.turn(self.orientation, 0)

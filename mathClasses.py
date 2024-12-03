@@ -100,11 +100,6 @@ class Matrix:
     def rot(radians:float):
         return Matrix([[cos(radians),-sin(radians)],[sin(radians),cos(radians)]])
 
-class WheelMotor:
-    def __init__(self,lMotor,rMotor):
-        self.R = rMotor
-        self.L = lMotor
-
 class Angle:
     def __init__(self,lAngle,rAngle, wheelMotor:WheelMotor = None):
         self.R = lAngle
@@ -118,56 +113,3 @@ class Angle:
         def __sub__(self, other):
             if isinstance(other, Angle):
                return Angle(self.R - other.R, self.L - other.R)
-           
-def clamp(value: float, maximum: float, minimum: float):
-    """
-    keeps the value between maximum and minimum
-
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value between maximum and minimum
-    """
-    if maximum >= value >= minimum:
-        final_value = value
-    elif maximum < value:
-        final_value = maximum
-    elif minimum > value:
-        final_value = minimum
-    return(final_value)
-
-def absclamp(value: float, maximum: float, minimum: float):
-    """
-    keeps absolute value of the value between maximum and minimum
-
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value float
-    """
-    maximum = abs(maximum)
-    minimum = abs(minimum)
-    if maximum >= abs(value) >= minimum:
-        final_value = value
-    elif value == 0:
-        final_value = 0
-    elif maximum < abs(value):
-        final_value = maximum*value/abs(value)
-    elif minimum > abs(value):
-        final_value = minimum*value/abs(value)
-    return(final_value)
-
-def Avg(values):
-    if isinstance(values, Angle):
-        return (values.R + values.L)/2
-    if isinstance(values, list) and all(isinstance(item, (int,float)) for item in values):
-        sum = 0
-        for i in values:
-            sum += i
-        return sum/len(values)

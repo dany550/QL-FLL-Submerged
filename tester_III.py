@@ -1,5 +1,5 @@
 # 3rd - last step in program piramid
-from tools_II import *
+from tools import *
 
 print("ok ok ok ok ok ok ok ok ok ok ok ok ok ok ok ok")
 #this file is designt for testing
