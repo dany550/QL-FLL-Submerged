@@ -430,7 +430,7 @@ class Robot:
 
         #setup
         g_cons = 20 # gyrocorector constant (its not recomended to set below 2 and above 50)
-        corector_cons = 10
+        corector_cons = 10 * direction
         if speed == None: #may be modified
             speed = self.deaful_speed
         terminal_speed = clamp(terminal_speed, 1000, 50)
@@ -440,15 +440,15 @@ class Robot:
             x = (x - self.field[0][0]) % abs(self.field[0][0]- self.field[1][0]) + self.field[0][0]
         if self.field[0][1] - self.field[1][1] != 0:
             y = (y - self.field[0][1]) % abs(self.field[0][1]- self.field[1][1]) + self.field[0][1]
-        x_shift = x - self.x
-        y_shift = y - self.y
+        direction = clamp(direction, 1, -1)
+        x_shift = (x - self.x)*direction
+        y_shift = (y - self.y)
+        print(self.x, self.y, x_shift, y_shift)
         
         #trajectory calculator
         track_angle = angle_mod(degrees(atan2(y_shift, x_shift)))
-        if direction == 0:
-            direction = sign(90 - abs(angle_mod(track_angle - start_angle)), zero=False)
-        else:
-            direction = clamp(direction, 1, -1)
+        #if direction == 0:
+        #    direction = sign(90 - abs(angle_mod(track_angle - start_angle)), zero=False)
         track_angle = track_angle * direction
         distance = sqrt(x_shift**2 + y_shift**2)*direction
         if distance == 0:
@@ -459,7 +459,7 @@ class Robot:
 
         while True:
             self.locate(local=True)
-            self.speed_calculator(motor_angle, speed, terminal_speed, g_cons, corector_cons*direction)
+            self.speed_calculator(motor_angle, speed, terminal_speed, g_cons, corector_cons)
             self.motor_driver(self.L_speed, self.R_speed)
 
             if task:
