@@ -40,12 +40,12 @@ bot.straight_position(300, 520, -1)
 bot.straight_position(400, 860, 1)
 
 #mission 2 coral
-Ra.run_target(1000, 720, wait=False)
-La.run_target(1000, 110, wait=False)
+Ra.run_target(1000, 760, wait=False)
+La.run_target(1000, 105, wait=False)
 bot.straight_position(430, 800, -1)
 
 bot.straight_g(75, 50, True, 180)
-La.run_target(1000, 100,)
+La.run_target(1000, 100)
 La.run_target(1000, 95, wait=False)
 bot.straight_g(50)
 bot.straight_g(-20)
@@ -59,8 +59,7 @@ bot.straight_g(-100)
 La.run_target(1000, 100, wait=False)
 Ra.run_target(1000, 1300, wait=False)
 bot.straight_position(320, -220, 1)
-bot.turn(135, 0)
-bot.straight_g(30)
+bot.straight_g(30, 70, True, 135)
 La.run_target(1000, 20)
 bot.straight_g(-150)
 
@@ -80,23 +79,28 @@ Ra.run_target(480, 1200)
 bot.straight_g(50)
 Ra.run_target(500, 600)
 bot.straight_g(-60)
-#bojka
 
-Ra.run_target(500, 1300)
+#mission 5 bojka sample
+Ra.run_target(1000, 1300, wait=False)
 bot.straight_g(50)
 bot.turn(30, 0)
-bot.straight_position(830, 845,1)
-Ra.run_target(500, 100)
+bot.straight_position(840, 845,1)
+Ra.run_target(1000, 100, wait=False)
 bot.turn(90, 0)
 bot.straight_g(50)
-Ra.run_target(500, 1300)
-bot.straight_g(-50)
+Ra.run_target(1000, 1300)
+bot.straight_g(-60)
 
-#konec
-bot.turn(0, 0)
-bot.straight_position(425, 830,-1)
-bot.turn(70, 0)
-bot.straight_position(350, 250,-1)
-bot.turn(0, 0)
-bot.straight_position(200, 200,-1)
+#mission 6 loď
+La.run_target(1000, 10)
+bot.turn(0, 0, terminal_speed=400)
+bot.straight_position(-400, 835, 1)
+bot.straight_g(165, 50, True, -45)
+La.run_target(1000, 130)#####################dodělat
+bot.straight_g(70)
+bot.straight_g(-200)
 
+#mission 7 chaluha na špízu
+#La.run_target(1000, 45)
+#bot.turn(5, 0)
+#bot.straight_position()

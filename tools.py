@@ -409,7 +409,7 @@ class Robot:
                 self.motor_braker(stop)
                 break
            
-    def straight_position(self, x: float, y: float, direction: int = 0, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
+    def straight_position(self, x: float, y: float, direction: int, terminal_speed: Number = 50, skippable: bool = False, speed: Oprional[float] = None, task: object = None):
         """
         extra precise straight movement
         
@@ -659,7 +659,7 @@ class Mission:
         self.orientation = orientation
         self.arm_setup = arm_setup
         self.setup_speed = setup_speed
-    
+
     def start(self):
         for i in range(len(self.robot.arms)):
             arm = self.robot.arms[i]
