@@ -646,24 +646,77 @@ class Robot:
         """
         return None
 
+    def setup(self, robot_speed: int, arm_speeds: list):
+        timer = StopWatch()
+        StopWatch.reset(timer)
+        self.Lw.reset_angle()
+        self.Rw.reset_angle()
+        L_speed = robot_speed
+        arm_time = 400
+        aling_time = 500
+        arm_done = []
+        done = False
+        for i in range(len(self.arms)):
+            arm_speeds[i] = absclamp(arm_speeds[i], 1000, 100) 
+            self.arms[i].stress = clamp(abs(self.arms[i].stress), 8, 0.25)
+            self.arms[i].run(arm_speeds[i])
+            arm_done.append(False)
+
+        while True:
+            time = timer.time()
+            R_speed = motor_corector(self.Lw.angle(), self.Rw.angle(), robot_speed)
+            self.motor_driver(L_speed, R_speed)
+
+            if time > arm_time:
+                for i in range(len(self.arms)):
+                    cons = abs(clamp(800/arm_speeds[i], 6, 1.5))*self.arms[i].stress
+                    #cons(constant) = how many times the motor speed has to decrease to stop the motor.
+                    arm_speed = abs(self.arms[i].speed())
+                    if arm_speed < abs(arm_speeds[i]/cons):
+                        self.arms[i].stop()
+                        arm_done[i] = True
+                arms_done = True
+                for a_done in arm_done:
+                    if a_done == False:
+                        arms_done = False
+            
+            if time > aling_time:
+                self.motor_braker(True)
+                done = True
+
+            if done and arms_done:
+                break
+        self.Lw.reset_angle(0)
+        self.Rw.reset_angle(0)
+        for arm in self.arms:
+            arm.reset_angle(0)
+
     #neverending functions
     def gandalf(self):
         while True:
             self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
 
 class Mission:
-    def __init__(self, robot: Robot, x: float, y: flaot, orientation: float, arm_setup: list, setup_speed: int = 1000):
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, setup_speed: int = 1000):
         self.robot = robot
         self.x = x
         self.y = y
         self.orientation = orientation
         self.arm_setup = arm_setup
         self.setup_speed = setup_speed
+        self.body = []
+        self.done = False
+
+    def add_body(self, *command: object):
+        self.body = command
 
     def start(self):
-        for i in range(len(self.robot.arms)):
-            arm = self.robot.arms[i]
-            setup = self.arm_setup[i]
-            arm.run_target(self.setup_speed, setup, wait=False)
-        self.robot.straight_position(self.x, self.y)
-        self.robot.turn(self.orientation, 0)
+        if self.done:
+            for i in range(len(self.robot.arms)):
+                arm = self.robot.arms[i]
+                setup = self.arm_setup[i]
+                arm.run_target(self.setup_speed, setup, wait=False)
+            self.robot.straight_position(self.x, self.y, 1) ###
+            self.robot.turn(self.orientation, 0)
+            for command in self.body:
+                command()
