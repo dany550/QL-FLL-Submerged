@@ -1,3 +1,5 @@
+IN the state of absoule disorder (files changing their names...) preparation for 2.4.0
+
 to do:
     1. to clear the code and standartize sintax 100%
     2. to add arm operating function and other 50%

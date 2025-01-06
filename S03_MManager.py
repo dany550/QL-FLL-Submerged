@@ -1,34 +1,7 @@
-from tools import*
+from S02_R01 import*
+from S02_R02 import*
 
-hub = PrimeHub()
-Lw = Motor(Port.F, Direction.COUNTERCLOCKWISE)
-Rw = Motor(Port.B)
-Cs = ColorSensor(Port.E)
-bot = Robot(hub, 27.9, 158, Lw, Rw)
-Ra = Arm(Port.A, bot)
-bot.extra_task = bot.interupter
-bot.add_arms(Ra)
-bot.hub.system.set_stop_button(Button.BLUETOOTH)
-
-# mission definitions
-m11 = Mission(bot, 100, 100, 15, [50])
-def m11_body():
-    bot.straight_g(100)
-    Ra.target(1000, 500)
-    bot.straight_g(-100)
-m11.add_body(m11_body)
-
-m12 = Mission(bot, 500, 0, -50, [200])
-def m12_body():
-    bot.turn(50, 500)
-    Ra.target(500, 500)
-m12.add_body(m12_body)
-
-### ride definitions
-r1 = Ride(bot, Color.YELLOW, 0, 0, 0, [[0,0],[2000, 1140]], -500, [200], m11, m12)
-r2 = Ride(bot, Color.RED, 0, 0, 0, [[0,0],[2000, 1140]], -500, [200], m11, m12, m11)
-r3 = Ride(bot, Color.BLUE, 0, 0, 0, [[0,0],[2000, 1140]], -500, [200], m11, m12, m11, m11, m11, m11, m11, m11, m11, m11, m11)
-rides = [r1, r2, r3]
+rides = []###########
 
 color = Color.NONE
 timer = StopWatch()
@@ -107,12 +80,3 @@ while True:
             bot.hub.display.pixel(i//5 + 1, i%5, 50)
         for i in range(10):
             bot.hub.display.pixel(i//5 + 3, i%5, 0)
-
-
-    
-#to upgrade
-    #make all functions interuptable
-    #progress restarter and mission menu
-    #automatic directions
-    #automatic arm stoper and ride starter
-    #advanced checkpoints

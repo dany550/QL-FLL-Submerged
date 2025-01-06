@@ -2,103 +2,20 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor, ColorDistanceSensor
 from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon, Axis
 from pybricks.tools import wait, StopWatch, multitask, run_task
-from icons import*
-from umath import*
-
-### Mathematical function
-def sign(value: float, zero: bool = True):
-    if value == 0 and zero:
-        sign = 0
-    elif value < 0:
-        sign = -1
-    else:
-        sign = 1
-    return sign
-
-def avrg(*value: float):
-    avrg = sum(value)/len(value)
-    return avrg
-
-def angle_mod(value: float):
-    value = (value + 180) % 360 - 180
-    return value
-
-def clamp(value: float, maximum: float, minimum: float):
-    """
-    keeps the value between maximum and minimum
-
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value between maximum and minimum
-    """
-    if maximum >= value >= minimum:
-        final_value = value
-    elif maximum < value:
-        final_value = maximum
-    elif minimum > value:
-        final_value = minimum
-    return final_value
-
-def absclamp(value: float, maximum: float, minimum: float):
-    """
-    keeps absolute value of the value between maximum and minimum
-
-    Parameters:
-        - value: float
-        - maximum: float
-        - minimum: float
-
-    Returns:
-        - value float
-    """
-    maximum = abs(maximum)
-    minimum = abs(minimum)
-    vsign = sign(value)
-    if maximum >= abs(value) >= minimum:
-        final_value = value
-    elif value == 0:
-        final_value = 0
-    elif maximum < abs(value):
-        final_value = maximum*vsign
-    elif minimum > abs(value):
-        final_value = minimum*vsign
-    return final_value
-
-def motor_corector(L_angle, R_angle, speed, ratio: Number=1, extra_condition=True):#not shure how useful
-    """
-    - this function calculates speed of one motor (right) from difference of motor angles
-    - this could be use only for functions which use both wheels
-    - 'vyrovnávač pohybu'
-
-    Parameters:
-        - L_angle: Number - deg - motor angle of the motor whose speed isn't calculated by this function (left)
-        - R_angle: Number - deg - motor angle of the motor whose speed is calulated by this function (right)
-        - speed: Number - deg/s
-        - extra_condition: if you have some conditions when to calculate and when not, write them here
-    """
-    constant = 1
-    # this constant is how strong the motor corection might be
-    if extra_condition:
-        R_speed = absclamp(((L_angle-R_angle)*constant)+speed, 2*speed, speed/2)*ratio
-        #print(((L_angle-R_angle)*constant)+speed)
-    else:
-        R_speed = speed
-    return R_speed
+from F00_icons import*
+from F00_MathClasses import*
 
 # Whatever
 class Arm(Motor):
-    def __init__(self, port: Port, positive_direction: Direction=Direction.CLOCKWISE, gears: Optional[Union[Collection[int], Collection[Collection[int]]]]=None, reset_angle: bool=True, profile: Number=None, stress: float =1):
+    def __init__(self, port: Port, robot: Robot, positive_direction: Direction=Direction.CLOCKWISE, gears: Optional[Union[Collection[int], Collection[Collection[int]]]]=None, reset_angle: bool=True, profile: Number=None, stress: float =1):
         """
         this is expaniso for motor class
 
         Parameters:
-            - port: Port Port to which the motor is connected. 
-            - positive_direction: Direction Which direction the motor should turn when you give a positive speed value or angle. 
-            - gears: list List of gears linked to the motor. The gear connected to the motor comes first and the gear connected to the output comes last.
+            - port: Port ... Port to which the motor is connected. 
+            - robot: Robot ... robot whose attachment this arm is.
+            - positive_direction: Direction ... Which direction the motor should turn when you give a positive speed value or angle. 
+            - gears: list ... List of gears linked to the motor. The gear connected to the motor comes first and the gear connected to the output comes last.
                 For example: ``[12, 36]`` represents a gear train with a
                 12-tooth gear connected to the motor and a 36-tooth gear
                 connected to the output. Use a list of lists for multiple
@@ -106,14 +23,29 @@ class Arm(Motor):
                 When you specify a gear train, all motor commands and settings
                 are automatically adjusted to account for the resulting gear
                 ratio. The motor direction remains unchanged by this.
-            - reset_angle: bool Choose True to reset the rotation sensor value to the absolute marker angle (between -180 and 179). Choose False to keep the current value, so your program knows where it left off last time. 
-            - profile: Number, deg Precision profile. This is the approximate position tolerance in degrees that is acceptable in your application. A lower value gives more precise but more erratic movement; a higher value gives less precise but smoother movement. If no value is given, a suitable profile for this motor type will be selected automatically (about 11 degrees).
+            - reset_angle: bool ... Choose True to reset the rotation sensor value to the absolute marker angle (between -180 and 179). Choose False to keep the current value, so your program knows where it left off last time. 
+            - profile: Number ... deg Precision profile. This is the approximate position tolerance in degrees that is acceptable in your application. A lower value gives more precise but more erratic movement; a higher value gives less precise but smoother movement. If no value is given, a suitable profile for this motor type will be selected automatically (about 11 degrees).
             - stress: float
         """
         super().__init__(port, positive_direction, gears, reset_angle, profile)
+        self.robot = robot
         self.stress = clamp(abs(stress), 8, 0.25)
     
-    def align(self, speed):
+    def target(self, angle: int, speed: int = 1000, wait: bool = True):
+        """
+        run_target but better!!!
+
+        """
+        if self.robot.interupt == False:
+            self.run_target(speed, angle, wait=False)
+            if wait == True:
+                while abs(self.angle() - angle) > 1 and not self.robot.interupt:
+                    if self.robot.extra_task:
+                        self.robot.extra_task()
+        else:
+            self.stop()
+
+    def align(self, speed: int):
         """
         stops the motor as soon as it meets resistance
 
@@ -121,23 +53,22 @@ class Arm(Motor):
             - speed: Number - deg/s (+ clockwise, - counterclockwise)
             - stress: Number - if the motor is under upnormal stress, change stress <0.25; 8>. More stress means higher resistence of motor.
         """
-        #limiter
-        speed = clamp(abs(speed), 1000, 100)*sign(speed) 
-        self.stress = clamp(abs(self.stress), 8, 0.25)
-        cons = abs(clamp(800/speed, 6, 1.5))*self.stress
-        #cons(constant) = how many times the motor speed has to decrease to stop the motor.
-        time = 300 + abs(speed/4)
-        #time is time until the motor speeds up
+        if self.robot.interupt == False:
+            #limiter
+            speed = clamp(abs(speed), 1000, 100)*sign(speed) 
+            self.stress = clamp(abs(self.stress), 8, 0.25)
+            cons = abs(clamp(800/speed, 6, 1.5))*self.stress
+            #cons(constant) = how many times the motor speed has to decrease to stop the motor.
+            time = 300 + abs(speed/4)
+            #time is time until the motor speeds up
 
-        self.run(speed)
-        wait(time)
+            self.run(speed)
+            wait(time)
 
-        while True:
-            arm_speed = abs(self.speed())
-            #print(arm_speed, "/", speed)
-            if arm_speed < abs(speed/cons):
-                self.stop()
-                break
+            while abs(self.speed()) < abs(speed/cons) and not self.robot.interupt:
+                if self.robot.extra_task:
+                    self.robot.extra_task()
+            self.stop()
 
 class Ultrasonic(UltrasonicSensor):
     def __init__(self, port: Port, x_shift: float, y_shift: float, orientation: float):
@@ -526,7 +457,7 @@ class Robot:
                 self.extra_task()
 
             #motor braker
-            if abs(abs(angle)-abs(self.orientation))<=1:
+            if abs(abs(angle)-abs(self.orientation))<=1 or self.interupt:
                 if stop:
                     self.motor_braker(stop)
                 break
@@ -641,12 +572,6 @@ class Robot:
         self.motor_braker(True)
 
     #composite complex functions
-    def ultralocate(self, ul: Ultrasonic, x: float, y: float):
-        """
-        being designed!
-        """
-        return None
-
     def arm_setup_reset(self, timer, speed): #not finished
         StopWatch.reset(timer)
         arm_done = []
@@ -726,22 +651,47 @@ class Robot:
     def interupter(self):
         pressed = self.hub.buttons.pressed()
         if Button.CENTER in pressed:
+            self.hub.speaker.beep()
             self.interupt = True
             return True
         else:
             return False
 
+class Setup:
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, field: list, rs_speed: int, as_speeds: list):
+        """
+        Parameters:    
+            - robot: Robot
+            - x: float
+            - y: float
+            - orientation: float
+            - field: list
+            - rs_speed: int
+            - as_speeds: list
+        """
+        self.robot = robot
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+        self.field = field
+        self.rs_speed = rs_speed
+        self.as_speeds = as_speeds
+    
+    def start(self):
+        self.robot.setup(self.rs_speed, self.as_speeds)
+        self.robot.set_origin(self.x, self.y, self.orientation, self.field)        
+
 class Mission:
     def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, setup_speed: int = 1000):
         """
         Parameters
-        -   robot: Robot - robot name
+        -   robot: Robot ... robot name
         -   x: float
         -   y: float
         -   orientation: float
-        -   arm_setup: list - list of arm aim setup angles 
-        -   body: object - print() -> (print)
+        -   arm_setup: list ... list of arm aim setup angles 
         -   setup_speed
+        Without body is kind of useless!!! body: object ... print() -> (print)
         """
         self.robot = robot
         self.x = x
@@ -754,6 +704,13 @@ class Mission:
         self.checkpoint = None
 
     def add_body(self, *body: object):
+        """
+        This is the important part which determines what should be done durinr this mission
+        
+        Parameters:
+            - body: object ... function or more functions without the brackets at the end. They together determine the purpuse of this function.
+                eg: print() -> add_body(print)
+        """
         self.body = body
 
     def add_checkpoint(self, x: float, y:float, direction:int):
@@ -773,31 +730,25 @@ class Mission:
             self.robot.straight_position(self.checkpoint[0], self.checkpoint[1], self.checkpoint[2]) ### add automatic direction
 
 class Ride:
-    def __init__(self, robot: Robot, x: float, y: float, orientation: float, field: list, rs_speed: int, as_speeds: list, *missions: Mission):
+    def __init__(self, color: Color, setup: Setup, *missions: Mission):
         """
         Parameters:
-            - robot: Robot
-            - x: float
-            - y: float
-            - orientation: float
-            - field: list
-            - rs_speed: int
-            - as_speeds: list
+            - color: Color ... color linked to the ride (on the attachment)
+            - setup: Setup ... alingment procedure
             - missions: Mission
         """
-        self.robot = robot
-        self.x = x
-        self.y = y
-        self.orientation = orientation
-        self.field = field
-        self.rs_speed = rs_speed
-        self.as_speeds = as_speeds
+        self.color = color
+        self.setup = setup
         self.missions = missions
 
     def setup(self):
-        self.robot.setup(self.rs_speed, self.as_speeds)
-        self.robot.set_origin(self.x, self.y, self.orientation, self.field)
+        self.setup.start()   
         
     def next_mission(self): #not finished
+        for mission in self.missions:
+            mission.start()
+
+    def start(self): #mission number add maybe
+        self.setup.start()
         for mission in self.missions:
             mission.start()
