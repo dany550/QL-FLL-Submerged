@@ -470,6 +470,7 @@ class Robot:
             #motor breaker
             if abs(self.local_x) > abs(distance) or self.interupt: 
                 self.motor_braker(stop)
+                print(stop, self.x, self.y)
                 break
 
     def turn(self, angle: float, radius: float, terminal_speed: int = 50, skippable: bool = False, speed: Oprional[float] = None, gyro_reset: bool=False, task: object = None):
@@ -646,12 +647,38 @@ class Robot:
         """
         return None
 
+    def arm_setup_reset(self, timer, speed): #not finished
+        StopWatch.reset(timer)
+        arm_done = []
+        for i in range(len(self.arms)):
+            speed = absclamp(speed, 1000, 100) 
+            self.arms[i].stress = clamp(abs(self.arms[i].stress), 8, 0.25)
+            self.arms[i].run(speed)
+            arm_done.append(False)
+
+    def arm_setup(self, time, speed): #not finished
+        timer = StopWatch()
+        arm_time = 400
+        if time > arm_time:
+            for i in range(len(self.arms)):
+                cons = abs(clamp(800/arm_speeds[i], 6, 1.5))*self.arms[i].stress
+                #cons(constant) = how many times the motor speed has to decrease to stop the motor.
+                arm_speed = abs(self.arms[i].speed())
+                if arm_speed < abs(arm_speeds[i]/cons):
+                    self.arms[i].stop()
+                    arm_done[i] = True
+            arms_done = True
+            for a_done in arm_done:
+                if a_done == False:
+                    arms_done = False
+            return arms_done
+
     def setup(self, robot_speed: int, arm_speeds: list):
         timer = StopWatch()
         StopWatch.reset(timer)
         self.Lw.reset_angle()
         self.Rw.reset_angle()
-        L_speed = robot_speed
+        speed = robot_speed
         arm_time = 400
         aling_time = 500
         arm_done = []
@@ -664,8 +691,7 @@ class Robot:
 
         while True:
             time = timer.time()
-            R_speed = motor_corector(self.Lw.angle(), self.Rw.angle(), robot_speed)
-            self.motor_driver(L_speed, R_speed)
+            self.motor_driver(speed, speed)
 
             if time > arm_time:
                 for i in range(len(self.arms)):
@@ -696,27 +722,82 @@ class Robot:
         while True:
             self.hub.speaker.play_notes(["A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/4", "A3/8", "A3/16", "A3/16", "A3/4", "R/8", "C4/4", "A3/8", "R/8", "G3/8", "G3/8", "F3/8", "R/8", "D3/8", "D3/8", "E3/8", "F3/8", "D3/8"], 130)
 
+    #task library
+    def interupter(self):
+        pressed = self.hub.buttons.pressed()
+        if Button.CENTER in pressed:
+            self.interupt = True
+            return True
+        else:
+            return False
+
 class Mission:
     def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, setup_speed: int = 1000):
+        """
+        Parameters
+        -   robot: Robot - robot name
+        -   x: float
+        -   y: float
+        -   orientation: float
+        -   arm_setup: list - list of arm aim setup angles 
+        -   body: object - print() -> (print)
+        -   setup_speed
+        """
         self.robot = robot
         self.x = x
         self.y = y
         self.orientation = orientation
         self.arm_setup = arm_setup
         self.setup_speed = setup_speed
-        self.body = []
         self.done = False
+        self.body = []
+        self.checkpoint = None
 
-    def add_body(self, *command: object):
-        self.body = command
+    def add_body(self, *body: object):
+        self.body = body
 
-    def start(self):
-        if self.done:
+    def add_checkpoint(self, x: float, y:float, direction:int):
+        self.checkpoint = [x, y, direction] # add automati direction
+
+    def start(self, checkpoint: bool = True):
+        if not self.done and not self.robot.interupt:
             for i in range(len(self.robot.arms)):
-                arm = self.robot.arms[i]
+                arm = self.robot.arms[i] 
                 setup = self.arm_setup[i]
-                arm.run_target(self.setup_speed, setup, wait=False)
-            self.robot.straight_position(self.x, self.y, 1) ###
+                arm.run_target(self.setup_speed, setup, wait=False) # add interupter device
+            self.robot.straight_position(self.x, self.y, 1) ### add automatic direction
             self.robot.turn(self.orientation, 0)
             for command in self.body:
                 command()
+        elif self.checkpoint and checkpoint:
+            self.robot.straight_position(self.checkpoint[0], self.checkpoint[1], self.checkpoint[2]) ### add automatic direction
+
+class Ride:
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, field: list, rs_speed: int, as_speeds: list, *missions: Mission):
+        """
+        Parameters:
+            - robot: Robot
+            - x: float
+            - y: float
+            - orientation: float
+            - field: list
+            - rs_speed: int
+            - as_speeds: list
+            - missions: Mission
+        """
+        self.robot = robot
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+        self.field = field
+        self.rs_speed = rs_speed
+        self.as_speeds = as_speeds
+        self.missions = missions
+
+    def setup(self):
+        self.robot.setup(self.rs_speed, self.as_speeds)
+        self.robot.set_origin(self.x, self.y, self.orientation, self.field)
+        
+    def next_mission(self): #not finished
+        for mission in self.missions:
+            mission.start()

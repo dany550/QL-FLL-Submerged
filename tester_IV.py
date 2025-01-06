@@ -13,10 +13,5 @@ bot = Robot(hub, 27.9, 158, Lw, Rw)
 bot.set_origin(0,0,0)
 bot.add_arms(Ra)
 
-m1 = Mission(bot, 100, 100, 0, [500])
-def m1_body():
-    bot.straight_g(100)
-    print("gandalf")
-m1.add_body(m1_body)
+Ra.run_until_stalled(500)
 
-m1.start()

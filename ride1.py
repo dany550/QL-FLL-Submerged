@@ -3,14 +3,14 @@ from tools import *
 hub = PrimeHub()
 Lw = Motor(Port.A, Direction.COUNTERCLOCKWISE)
 Rw = Motor(Port.B)
-La = Arm(Port.C, gears=[20, 28])
+La = Arm(Port.C, gears=[20, 28]) #dflkadg
 Ra = Arm(Port.D)
 bot = Robot(hub, 27.9, 158, Lw, Rw)
 bot.add_arms(La, Ra)
 
 #preparation
 bot.setup(-200, [-500, -1000])
-bot.set_origin(140, 110, 90, [[0,0],[2000, 1140]])
+bot.set_origin(140, 113, 90, [[0,0],[2000, 1140]])
 La.run_target(1000, 50, wait=False)
 bot.straight_g(50, 900)
 
