@@ -2,7 +2,7 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor, ColorDistanceSensor
 from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon, Axis
 from pybricks.tools import wait, StopWatch, multitask, run_task
-from F00_icons import*
+from F00_Icons import*
 from F00_MathClasses import*
 
 # Whatever
@@ -39,7 +39,7 @@ class Arm(Motor):
         if self.robot.interupt == False:
             self.run_target(speed, angle, wait=False)
             if wait == True:
-                while abs(self.angle() - angle) > 1 and not self.robot.interupt:
+                while abs(self.angle() - angle) > 5 and not self.robot.interupt:
                     if self.robot.extra_task:
                         self.robot.extra_task()
         else:
@@ -154,8 +154,10 @@ class Robot:
         self.y = y
         self.orientation_dif = orientation - self.hub.imu.heading()
         self.field = field_range
+
         self.Lw.reset_angle(0)
         self.Rw.reset_angle(0)
+        self.avr_motor_angle = 0
 
     def set_local_origin(self, x: float, y: float, orientation: float, window: int = 10):
         """
@@ -177,7 +179,7 @@ class Robot:
         """
         replacement for self.hub.imu.heading()
         """
-        self.orientation = self.orientation_dif - self.hub.imu.heading()
+        self.orientation = (self.orientation_dif + self.hub.imu.heading())*(-1)
         return self.orientation
 
     def get_acceleration(self):
@@ -374,7 +376,7 @@ class Robot:
         direction = clamp(direction, 1, -1)
         x_shift = (x - self.x)*direction
         y_shift = (y - self.y)
-        print(self.x, self.y, x_shift, y_shift)
+        #print(self.x, self.y, x_shift, y_shift)
         
         #trajectory calculator
         track_angle = angle_mod(degrees(atan2(y_shift, x_shift)))
@@ -401,7 +403,7 @@ class Robot:
             #motor breaker
             if abs(self.local_x) > abs(distance) or self.interupt: 
                 self.motor_braker(stop)
-                print(stop, self.x, self.y)
+                #print(stop, self.x, self.y)
                 break
 
     def turn(self, angle: float, radius: float, terminal_speed: int = 50, skippable: bool = False, speed: Oprional[float] = None, gyro_reset: bool=False, task: object = None):
@@ -657,6 +659,9 @@ class Robot:
         else:
             return False
 
+    def position(self):
+        return [self.x, self.y, self.orientation]
+
 class Setup:
     def __init__(self, robot: Robot, x: float, y: float, orientation: float, field: list, rs_speed: int, as_speeds: list):
         """
@@ -679,7 +684,7 @@ class Setup:
     
     def start(self):
         self.robot.setup(self.rs_speed, self.as_speeds)
-        self.robot.set_origin(self.x, self.y, self.orientation, self.field)        
+        self.robot.set_origin(self.x, self.y, self.orientation, self.field)      
 
 class Mission:
     def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, setup_speed: int = 1000):
@@ -690,7 +695,7 @@ class Mission:
         -   y: float
         -   orientation: float
         -   arm_setup: list ... list of arm aim setup angles 
-        -   setup_speed
+        -   setup_speed: int
         Without body is kind of useless!!! body: object ... print() -> (print)
         """
         self.robot = robot
@@ -717,11 +722,12 @@ class Mission:
         self.checkpoint = [x, y, direction] # add automati direction
 
     def start(self, checkpoint: bool = True):
+        #print(self.robot.position())
         if not self.done and not self.robot.interupt:
             for i in range(len(self.robot.arms)):
                 arm = self.robot.arms[i] 
                 setup = self.arm_setup[i]
-                arm.run_target(self.setup_speed, setup, wait=False) # add interupter device
+                arm.target(setup, self.setup_speed, False)
             self.robot.straight_position(self.x, self.y, 1) ### add automatic direction
             self.robot.turn(self.orientation, 0)
             for command in self.body:
@@ -740,9 +746,6 @@ class Ride:
         self.color = color
         self.setup = setup
         self.missions = missions
-
-    def setup(self):
-        self.setup.start()   
         
     def next_mission(self): #not finished
         for mission in self.missions:

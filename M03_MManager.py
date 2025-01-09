@@ -1,7 +1,7 @@
-from S02_R01 import*
-from S02_R02 import*
+from M02_R01 import*
+#from M02_R02 import*
 
-rides = []###########
+rides = [r1]###########
 
 color = Color.NONE
 timer = StopWatch()
@@ -22,15 +22,15 @@ while True:
 
     if color == Color.NONE:
         for arm in bot.arms:
-            arm.run(shake_speed) # might be upgraded with arm_setup
+            arm.run(shake_speed)
     else:
         for arm in bot.arms:
             if arm.stalled():
                 arm.stop()
 
     ride_n = 0
-    for i in range(len(rides))
-        if color = rides[i].color:
+    for i in range(len(rides)):
+        if color == rides[i].color:
             ride_n = i+1
 
     if ride_n != 0:
@@ -53,7 +53,8 @@ while True:
             hub.speaker.beep(600)
             for arm in bot.arms:
                 arm.stop()
-            rides[ride_n].setup()
+            rides[ride_n].setup.start()
+            bot.locate()
 
             bot.hub.display.pixel(0, 2, 0)
             bot.hub.display.pixel(0, 3, 100)
@@ -63,6 +64,8 @@ while True:
                 rides[ride_n].missions[mission_n].start()
                 if not bot.interupt:
                     rides[ride_n].missions[mission_n].done = True
+                else:
+                    break
 
         else:
             bot.hub.display.pixel(0, 1, 100)
