@@ -5,30 +5,27 @@ from M01_Inicialization import*
 m10 = Setup(bot, 140, 113, 90, [[0,0],[2000, 1140]], -200, [-500, -1000])
 
 #mission 1 clear the area
-m11 = Mission(bot, 475, 595, 60, [85, 300])
+m11 = Mission(bot, 470, 580, 50, [65, 300])
 def m11_body():
-    La.target(225)
+    La.target(200)
     bot.straight_position(300, 520, -1)
     bot.straight_position(400, 860, 1)
 m11.add_body(m11_body)
+m11.add_checkpoint(400, 800, 1)
 
 #mission 2 coral
-m12 = Mission(bot, 430, 800, 180, [105, 760])
+m12 = Mission(bot, 430, 780, 180, [90, 760], -1)
 def m12_body():
     bot.straight_g(75, 50, True, 180)
-    La.target(100)
-    La.target(95, wait=False)
+    La.target(80)
+    La.target(70, wait=False)
     bot.straight_g(50)
-    bot.straight_g(-20)
-    La.target(140)
-    bot.straight_g(20)
-    bot.straight_g(20)
     Ra.target(1000)
-    bot.straight_g(-100)
+    bot.straight_g(-120)
 m12.add_body(m12_body)
 
 #mission 3 shark
-m13 = Mission(bot, 320, -220, 135, [100, 1300])
+m13 = Mission(bot, 320, -240, 135, [100, 1300])
 def m13_body():
     bot.straight_g(30, 70, True, 135)
     La.target(20)
@@ -36,7 +33,7 @@ def m13_body():
 m13.add_body(m13_body)
 
 #mission 4 reef
-m14 = Mission(bot, 360, 960, 25, [160, 1300])
+m14 = Mission(bot, 360, 940, 25, [160, 1300])
 def m14_body():
     bot.straight_g(35)
     La.target(90)
@@ -52,7 +49,7 @@ def m14_body():
 m14.add_body(m14_body)
 
 #mission 5 bojka sample
-m15 = Mission(bot, 840, 845, 30, [160, 1300])
+m15 = Mission(bot, 840, 825, 30, [160, 1300])
 def m15_body():
     Ra.target(100, wait=False)
     bot.turn(90, 0)
@@ -62,7 +59,7 @@ def m15_body():
 m15.add_body(m15_body)
 
 #mission 6 loď
-m16 = Mission(bot, -400, 835, -45, [10, 1300])
+m16 = Mission(bot, -400, 815, -45, [10, 1300])
 def m16_body():
     bot.straight_g(165, 50, True, -45)
     La.target(130)#####################dodělat
@@ -76,7 +73,7 @@ def m17_body():
     return None
 
 #def ride
-r1 = Ride(Color.GREEN, m10, m11, m12, m13, m14, m15, m16)
+r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m16)
 
 #MM micro managrer
 if __name__ == "Main":

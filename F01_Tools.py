@@ -2,7 +2,7 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor, ColorDistanceSensor
 from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Icon, Axis
 from pybricks.tools import wait, StopWatch, multitask, run_task
-from F00_Icons import*
+#from F00_Icons import*
 from F00_MathClasses import*
 
 # Whatever
@@ -179,7 +179,7 @@ class Robot:
         """
         replacement for self.hub.imu.heading()
         """
-        self.orientation = (self.orientation_dif + self.hub.imu.heading())*(-1)
+        self.orientation = -(self.orientation_dif + self.hub.imu.heading()) + 180
         return self.orientation
 
     def get_acceleration(self):
@@ -430,6 +430,7 @@ class Robot:
         stop = terminal_speed == 50
         #angle = angle_mod(angle)
         ori_diff = angle - start_angle #in deg
+        print(angle, start_angle, ori_diff)
         motor_angle = (abs(radius) + self.axle_track) * pi * ori_diff / self.onerot #average absolute trajectory in deg
         self.set_local_origin(0, 0, start_angle)
 
@@ -684,10 +685,11 @@ class Setup:
     
     def start(self):
         self.robot.setup(self.rs_speed, self.as_speeds)
-        self.robot.set_origin(self.x, self.y, self.orientation, self.field)      
+        self.robot.set_origin(self.x, self.y, self.orientation, self.field) 
+        self.robot.straight_g(50)     
 
 class Mission:
-    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, setup_speed: int = 1000):
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, direction = 1, setup_speed: int = 1000):
         """
         Parameters
         -   robot: Robot ... robot name
@@ -701,6 +703,7 @@ class Mission:
         self.robot = robot
         self.x = x
         self.y = y
+        self.direction = direction
         self.orientation = orientation
         self.arm_setup = arm_setup
         self.setup_speed = setup_speed
@@ -728,7 +731,8 @@ class Mission:
                 arm = self.robot.arms[i] 
                 setup = self.arm_setup[i]
                 arm.target(setup, self.setup_speed, False)
-            self.robot.straight_position(self.x, self.y, 1) ### add automatic direction
+            self.robot.straight_position(self.x, self.y, self.direction) ### add automatic direction
+            
             self.robot.turn(self.orientation, 0)
             for command in self.body:
                 command()
