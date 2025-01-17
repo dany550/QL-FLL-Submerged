@@ -4,10 +4,12 @@ from M02_R01 import*
 rides = [r1]###########
 
 color = Color.NONE
+pressed = []
 timer = StopWatch()
 shake_speed = -500
 
 while True:
+    ppressed = pressed
     pressed = bot.hub.buttons.pressed()
     pcolor = color
     color = Cs.color()
@@ -41,9 +43,31 @@ while True:
 
         for i in range(len(rides[ride_n].missions)):
             if rides[ride_n].missions[i].done:
-                bot.hub.display.pixel(i//5 + 3, i%5)
-            else:
                 bot.hub.display.pixel(i//5 + 3, i%5, 50)
+            else:
+                bot.hub.display.pixel(i//5 + 3, i%5, 100)
+
+        if Button.LEFT in pressed:
+            for i in range(len(rides[ride_n].missions)):
+                if not rides[ride_n].missions[i].done and i > 0:
+                    rides[ride_n].missions[i-1].done = False
+                    hub.speaker.beep(400)
+                    break
+                elif not rides[ride_n].missions[i].done and i == 0:
+                    hub.speaker.beep(200)
+                    break
+                elif i == len(rides[ride_n].missions)-1:
+                    rides[ride_n].missions[i].done = False
+                    hub.speaker.beep(400)
+
+        if Button.RIGHT in pressed:
+            for i in range(len(rides[ride_n].missions)):
+                if not rides[ride_n].missions[i].done and i < len(rides[ride_n].missions):
+                    rides[ride_n].missions[i].done = True
+                    hub.speaker.beep(400)
+                    break
+                elif i == len(rides[ride_n].missions)-1:
+                    hub.speaker.beep(200)
 
         if Button.CENTER in pressed:
             bot.hub.light.on(Color.RED)
@@ -59,7 +83,7 @@ while True:
             bot.hub.display.pixel(0, 2, 0)
             bot.hub.display.pixel(0, 3, 100)
             for mission_n in range(len(rides[ride_n].missions)):
-                bot.hub.display.pixel(mission_n//5 + 3, mission_n%5)
+                bot.hub.display.pixel(mission_n//5 + 3, mission_n%5, 50)
                 hub.speaker.beep(800)
                 rides[ride_n].missions[mission_n].start()
                 if not bot.interupt:
@@ -83,4 +107,5 @@ while True:
             bot.hub.display.pixel(i//5 + 1, i%5, 50)
         for i in range(10):
             bot.hub.display.pixel(i//5 + 3, i%5, 0)
-    wait(10)
+    
+    wait(50)
