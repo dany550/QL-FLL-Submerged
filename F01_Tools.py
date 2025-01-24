@@ -574,7 +574,18 @@ class Robot:
                 self.extra_task()
         self.motor_braker(True)
 
-    #composite complex functions
+    #complex calibration
+    def ultralocate(self, ultrasonic: Ultrasonic, orientation, distance, tolaerance = 10):
+        self.turn(orientation, 0)
+        for i in range(10):
+            m_distance = ultrasonic.distance()
+            shift = m_distance - distance
+            if abs(shift)<tolaerance:
+                self.x += cos(radians(orientation))*shift
+                self.y += sin(radians(orientation))*shift
+                return [self.x, self.y]
+
+    #setups
     def arm_setup_reset(self, timer, speed): #not finished
         StopWatch.reset(timer)
         arm_done = []
