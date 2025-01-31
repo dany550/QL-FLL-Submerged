@@ -3,20 +3,26 @@ from M02_R02 import*
 from M02_R03 import*
 from M02_R04 import*
 
-rides = [r1, r2, r3, r4]###########
+rides = [r1, r2, r3, r4]
 
 color = Color.NONE
+started = True
 pressed = []
 timer = StopWatch()
 shake_speed = -500
+match_time = 150
 
 while True:
     ppressed = pressed
     pressed = bot.hub.buttons.pressed()
     pcolor = color
     color = Cs.color()
-    time = timer.time()
     bot.interupt = False
+
+    if started:
+        time = 0
+    else:
+        time = timer.time()
     
     if color != pcolor:
         if color != Color.NONE:
@@ -80,19 +86,28 @@ while True:
             for arm in bot.arms:
                 arm.stop()
             rides[ride_n].setup.start()
-            bot.locate()
+
+            wait(50)
+            if started:
+                while not Button.CENTER in pressed:
+                    wait(50)
+                timer.reset()
+                started = False
 
             bot.hub.display.pixel(0, 2, 0)
             bot.hub.display.pixel(0, 3, 100)
+            rs_time = timer.time()
             for mission_n in range(len(rides[ride_n].missions)):
                 bot.hub.display.pixel(mission_n//5 + 3, mission_n%5, 50)
                 hub.speaker.beep(800)
+                ms_time = timer.time() #mission start time
                 rides[ride_n].missions[mission_n].start()
+                print("R ", ride_n+1, " M ", mission_n+1, " - time ", timer.time() - ms_time, " s")
                 if not bot.interupt:
                     rides[ride_n].missions[mission_n].done = True
                 else:
                     break
-
+            print("Ride time is ", timer.time() - rs_time, " s")
         else:
             bot.hub.display.pixel(0, 1, 100)
             bot.hub.display.pixel(0, 2, 0)
