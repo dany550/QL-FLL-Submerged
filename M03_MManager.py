@@ -88,10 +88,12 @@ while True:
             rides[ride_n].setup.start()
 
             wait(50)
-            if started:
-                while not Button.CENTER in pressed:
+            if started and ride_n == 0:
+                while not Button.CENTER in bot.hub.buttons.pressed():
                     wait(50)
                 timer.reset()
+                started = False
+            elif started:
                 started = False
 
             bot.hub.display.pixel(0, 2, 0)
@@ -102,12 +104,12 @@ while True:
                 hub.speaker.beep(800)
                 ms_time = timer.time() #mission start time
                 rides[ride_n].missions[mission_n].start()
-                print("R ", ride_n+1, " M ", mission_n+1, " - time ", timer.time() - ms_time, " s")
+                print("R ", ride_n+1, " M ", mission_n+1, " - time ", (timer.time() - ms_time)/1000, " s")
                 if not bot.interupt:
                     rides[ride_n].missions[mission_n].done = True
                 else:
                     break
-            print("Ride time is ", timer.time() - rs_time, " s")
+            print("Ride time is ", (timer.time() - rs_time)/1000, " s")
         else:
             bot.hub.display.pixel(0, 1, 100)
             bot.hub.display.pixel(0, 2, 0)
