@@ -104,12 +104,12 @@ while True:
                 hub.speaker.beep(800)
                 ms_time = timer.time() #mission start time
                 rides[ride_n].missions[mission_n].start()
-                print("R ", ride_n+1, " M ", mission_n+1, " - time ", (timer.time() - ms_time)/1000, " s")
+                print("t", ride_n+1, mission_n+1, "=", (timer.time() - ms_time)/1000, "s")
                 if not bot.interupt:
                     rides[ride_n].missions[mission_n].done = True
                 else:
                     break
-            print("Ride time is ", (timer.time() - rs_time)/1000, " s")
+            print(ride_n, "ride time is ", (timer.time() - rs_time)/1000, " s")
         else:
             bot.hub.display.pixel(0, 1, 100)
             bot.hub.display.pixel(0, 2, 0)

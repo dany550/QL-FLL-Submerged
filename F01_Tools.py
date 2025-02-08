@@ -430,7 +430,7 @@ class Robot:
         stop = terminal_speed == 50
         #angle = angle_mod(angle)
         ori_diff = angle - start_angle #in deg
-        print(angle, start_angle, ori_diff)
+        #print(angle, start_angle, ori_diff)
         motor_angle = (abs(radius) + self.axle_track) * pi * ori_diff / self.onerot #average absolute trajectory in deg
         self.set_local_origin(0, 0, start_angle)
 
@@ -700,7 +700,7 @@ class Setup:
         self.robot.straight_g(50)     
 
 class Mission:
-    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, direction = 1, setup_speed: int = 1000):
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, direction = 1, setup_speed: int = 1000, terminal_speed = 50):
         """
         Parameters
         -   robot: Robot ... robot name
@@ -721,6 +721,7 @@ class Mission:
         self.done = False
         self.body = []
         self.checkpoint = None
+        self.terminal_speed = terminal_speed
 
     def add_body(self, *body: object):
         """
@@ -742,9 +743,9 @@ class Mission:
                 arm = self.robot.arms[i] 
                 setup = self.arm_setup[i]
                 arm.target(setup, self.setup_speed, False)
-            self.robot.straight_position(self.x, self.y, self.direction) ### add automatic direction
+            self.robot.straight_position(self.x, self.y, self.direction, terminal_speed=self.terminal_speed) ### add automatic direction
             
-            self.robot.turn(self.orientation, 0)
+            self.robot.turn(self.orientation, 0, terminal_speed=self.terminal_speed)
             for command in self.body:
                 command()
         elif self.checkpoint and checkpoint:

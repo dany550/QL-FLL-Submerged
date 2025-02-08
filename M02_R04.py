@@ -1,12 +1,12 @@
 from M01_Inicialization import*
 #def missions
 
-m40 = Setup(bot, 2000 -120 , 110, 90, [[0,0],[2000, 1140]], -200, [-500, -1000])
+m40 = Setup(bot, 2000 - 120 , 110, 90, [[0,0],[2000, 1140]], -200, [-500, -1000])
 
-m41 = Mission(bot, -50, 340, 90, [180,0])
+m41 = Mission(bot, -50, 340, 90, [65,0])
 def m41_body():
     bot.straight_g(80, speed=100)
-    bot.straight_g(-120)
+    bot.straight_g(-200)
 m41.add_body(m41_body)
 
 m42 = Mission(bot,-395, 500, 135, [0, 0])

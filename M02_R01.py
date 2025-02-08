@@ -30,12 +30,12 @@ m12.add_body(m12_body)
 #mission 3 shark
 m13 = Mission(bot, 320, -240, 135, [100, 1300])
 def m13_body():
-    bot.straight_g(30, 70, True, 135)
+    bot.straight_g(50, 70, True, 135)
     La.target(20)
     bot.straight_g(-150)
 m13.add_body(m13_body)
 
-#mission 4 reef, potapec   dotyka se toho, zmen to, dikec
+#mission 4 reef, potapec dotyka se toho, zmen to, dikec
 m14 = Mission(bot, 300, 930, 25, [160, 1300])
 def m14_body():
     bot.straight_g(90)
@@ -44,7 +44,7 @@ def m14_body():
     bot.turn(70, 0, 500, speed=300)
     Ra.target(900, wait=False)
     La.target(80)
-    bot.straight_position(465, 770, -1)
+    bot.straight_position(455, 770, -1)
     bot.turn(90, 0)
     Ra.target(1200)
     bot.straight_g(50)
@@ -53,7 +53,7 @@ def m14_body():
     Ra.target(1200)
     bot.straight_position(550, 850, 1)
 m14.add_body(m14_body)
-m14.add_checkpoint(550, 820, 1)
+m14.add_checkpoint(550, 860, 1)
 
 #mission 5 bojka sample
 m15 = Mission(bot, 840, 825, 30, [160, 1300])
@@ -93,15 +93,17 @@ def m17_body():
     return None
 m17.add_body(m17_body)
 
-m18 = Mission(bot, -300, 770, -80, [60, 1300], direction=-1)
+m18 = Mission(bot, -650, 800, 0, [200, 1300], direction=1, terminal_speed=900)
 def m18_body():
-    bot.straight_position(-400, 550, 1)
-    bot.straight_position(-100, 150, 1)
+    bot.straight_position(-260, -270, 1)
+    bot.straight_position(-400, -420, -1)
+    bot.straight_position(-100, 150, -1)
+    La.target(10)
     return None
 m18.add_body(m18_body)
-
-#def ride
-r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m16, m17,m18)
+m18.add_checkpoint(-10, 10, 1)
+#def ride bez 16, 17
+r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15,m18)
 
 #MM micro managrer
 if __name__ == "Main":
