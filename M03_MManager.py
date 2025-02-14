@@ -89,9 +89,12 @@ while True:
 
             wait(50)
             if started and ride_n == 0:
+                bot.hub.light.on(Color.BLUE)
+                bot.hub.speaker.beep()
                 while not Button.CENTER in bot.hub.buttons.pressed():
                     wait(50)
                 timer.reset()
+                bot.hub.light.on(Color.RED)
                 started = False
             elif started:
                 started = False
