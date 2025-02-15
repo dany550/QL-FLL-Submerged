@@ -13,15 +13,15 @@ def m21_body():
 m21.add_body(m21_body)
 m21.add_checkpoint(615, 400, 1)
 
-m211 = Mission(bot, -615, 380, 180, [0, 500])
+m211 = Mission(bot, -830, 430, 180, [0, 500])
 def m211_body():
-    bot.straight_g(600, 50, True, 182)
+    bot.straight_g(500, 50, True, 200)
 m211.add_body(m211_body)
 
 m22 = Mission(bot, 280, 630, 180, [0, 500], 1)
 def m22_body():
     Ra.target(850, 500)
-    bot.straight_g(-250, 50, True, 180, speed=500)
+    bot.straight_g(-230, 50, True, 180, speed=400)
     bot.straight_g(100)
     bot.straight_g(-170, 50, True, 45)
     Ra.target(500, 500, False)

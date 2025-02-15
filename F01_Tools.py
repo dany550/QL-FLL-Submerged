@@ -700,7 +700,7 @@ class Setup:
         self.robot.straight_g(50)     
 
 class Mission:
-    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, direction = 1, setup_speed: int = 1000, terminal_speed = 50):
+    def __init__(self, robot: Robot, x: float, y: float, orientation: float, arm_setup: list, direction = 1, setup_speed: int = 1000, terminal_speed = 50, turn = True):
         """
         Parameters
         -   robot: Robot ... robot name
@@ -722,6 +722,7 @@ class Mission:
         self.body = []
         self.checkpoint = None
         self.terminal_speed = terminal_speed
+        self.turn = turn
 
     def add_body(self, *body: object):
         """
@@ -745,7 +746,8 @@ class Mission:
                 arm.target(setup, self.setup_speed, False)
             self.robot.straight_position(self.x, self.y, self.direction, terminal_speed=self.terminal_speed) ### add automatic direction
             
-            self.robot.turn(self.orientation, 0, terminal_speed=self.terminal_speed)
+            if self.turn:
+                self.robot.turn(self.orientation, 0, terminal_speed=self.terminal_speed)
             for command in self.body:
                 command()
         elif self.checkpoint and checkpoint:

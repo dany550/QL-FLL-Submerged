@@ -30,14 +30,14 @@ def m44_body():
     Ra.target(600)
 m44.add_body(m44_body)
 
-m45 = Mission(bot, 1100, -270, 135, [180, 0])
+m45 = Mission(bot, 1120, -270, 135, [180, 0])
 def m45_body():
-    bot.straight_g(100)
-    Ra.target(650)
+    bot.straight_g(80)
+    Ra.target(670)
 m45.add_body(m45_body)
 m45.add_checkpoint(-820, 840, 1)
 
-m46 = Mission(bot, -800, 800, 135, [180, 500], -1)
+m46 = Mission(bot, -820, 840, 135, [180, 500], -1)
 
 
 r4 = Ride(Color.YELLOW, m40, m42, m45, m46)
