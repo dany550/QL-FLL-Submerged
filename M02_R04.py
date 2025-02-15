@@ -33,7 +33,7 @@ m44.add_body(m44_body)
 m45 = Mission(bot, 1120, -270, 135, [180, 0])
 def m45_body():
     bot.straight_g(80)
-    Ra.target(670)
+    Ra.target(660)
 m45.add_body(m45_body)
 m45.add_checkpoint(-820, 840, 1)
 

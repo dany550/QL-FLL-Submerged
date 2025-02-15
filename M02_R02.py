@@ -13,7 +13,7 @@ def m21_body():
 m21.add_body(m21_body)
 m21.add_checkpoint(615, 400, 1)
 
-m211 = Mission(bot, -830, 430, 180, [0, 500])
+m211 = Mission(bot, -830, 410, 180, [0, 500])
 def m211_body():
     bot.straight_g(500, 50, True, 200)
 m211.add_body(m211_body)
