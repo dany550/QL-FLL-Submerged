@@ -10,12 +10,12 @@ m11 = Mission(bot, 470, 575, 50, [65, 300])
 def m11_body():
     La.target(200)
     bot.straight_position(300, 520, -1)
-    bot.straight_position(400, 860, 1)
+    #bot.straight_position(400, 860, 1)
 m11.add_body(m11_body)
 m11.add_checkpoint(430, 800, 1)
 
 #mission 2 coral
-m12 = Mission(bot, 430, 790, 180, [90, 830], -1)
+m12 = Mission(bot, 430, 790, 180, [90, 830])
 def m12_body():
     bot.straight_g(90, 50, True, 180)
     La.target(90)
@@ -32,7 +32,7 @@ m13 = Mission(bot, 320, -240, 135, [100, 1300])
 def m13_body():
     bot.straight_g(40, 70, True, 135)
     La.target(20)
-    bot.straight_g(-130)
+    #bot.straight_g(-50)
 m13.add_body(m13_body)
 
 #mission 4 reef, potapec dotyka se toho, zmen to, dikec
@@ -66,32 +66,10 @@ def m15_body():
 m15.add_body(m15_body)
 #m15.add_checkpoint(840, 815, 1)
 
-#mission 6 lod
-m16 = Mission(bot, -390, 820, -45, [-5, 1300])
+m16 = Mission(bot, -770, 450, -45,[100, 1300], terminal_speed=900, turn=False)
 def m16_body():
-    #print(1/0)
-    bot.straight_g(145, 50, True, -45)
-    La.target(130,300,wait = False)
-    bot.straight_g(70,20)
-    La.target(200,wait = False)
-    bot.straight_g(30)
-    bot.straight_g(-200)
+    bot.straight_position(-260, 180, 1)
 m16.add_body(m16_body)
-
-#mission 7 chaluha na špízu
-m17 = Mission(bot, -300, 760, 45, [80, 1300])
-def m17_body():
-    bot.straight_g(180)
-    bot.straight_g(-180)
-    bot.turn(0,0)
-    La.target(10,wait=False)
-    bot.straight_g(75)
-    #bot.straight_position(-230, 770, 1)
-    La.target(60)
-    bot.straight_g(-75)
-
-    return None
-m17.add_body(m17_body)
 
 m18 = Mission(bot, -400, 800, 0, [200, 1300], direction=1)
 def m18_body():
@@ -103,7 +81,7 @@ def m18_body():
 m18.add_body(m18_body)
 m18.add_checkpoint(-150, 70, 1)
 #def ride bez 16, 17
-r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m18)
+r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m16)
 
 #MM micro managrer
 if __name__ == "Main":

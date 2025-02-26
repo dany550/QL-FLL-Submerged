@@ -3,11 +3,13 @@ from M01_Inicialization import*
 
 m20 = Setup(bot, 2000 - 120, 110 , 90, [[0,0],[2000, 1140]], -50, [1000, -500])
 
-
-m21 = Mission(bot, -615, 380, 180, [0, 400])
+m21 = Mission(bot, -615, 350, 180, [0, 300], setup_speed=500)
 def m21_body(): 
-    bot.straight_g(350)
-    bot.straight_position(-800, 335, -1)
+    bot.straight_g(50, 500)
+    Ra.target(600, 500, False)
+    bot.straight_g(330)
+    Ra.target(200, 500)
+    #bot.straight_position(-800, 335, -1)
     #bot.straight_g(-150, 50, True, 150)
     bot.straight_g(250, 50, True, 180)
 m21.add_body(m21_body)
@@ -36,7 +38,7 @@ def m23_body():
     Ra.target(200, wait=False)
     bot.straight_g(-500)
 m23.add_body(m23_body)
-r2 = Ride(Color.BLUE, m20, m211, m22)
+r2 = Ride(Color.BLUE, m20, m21, m22)
 
 #MM micro managrer
 if __name__ == "Main":
