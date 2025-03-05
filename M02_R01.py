@@ -63,13 +63,14 @@ def m15_body():
     Ra.target(1300)
     bot.straight_g(-80, 50, True, 97)
 m15.add_body(m15_body)
-#m15.add_checkpoint(840, 815, 1)
+m15.add_checkpoint(1000, 800, 1)
 
 #return
 m16 = Mission(bot, -770, 450, -45,[100, 1300], terminal_speed=900, turn=False)
 def m16_body():
     bot.straight_position(-260, 180, 1)
 m16.add_body(m16_body)
+
 
 #useless
 m18 = Mission(bot, -400, 800, 0, [200, 1300], direction=1)
