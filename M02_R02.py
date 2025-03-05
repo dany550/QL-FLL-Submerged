@@ -3,17 +3,18 @@ from M01_Inicialization import*
 
 m20 = Setup(bot, 2000 - 120, 110 , 90, [[0,0],[2000, 1140]], -50, [1000, -500])
 
-m21 = Mission(bot, -615, 350, 180, [0, 300], setup_speed=500)
+m21 = Mission(bot, -615, 370, 180, [0, 300], setup_speed=500)
 def m21_body(): 
     bot.straight_g(30, 500)
     Ra.target(600, 500, False)
-    bot.straight_g(330)
+    bot.straight_g(335)
     Ra.target(200, 500)
     #bot.straight_position(-800, 335, -1)
     #bot.straight_g(-150, 50, True, 150)
     bot.straight_g(350, 50, True, 180)
 m21.add_body(m21_body)
-m21.add_checkpoint(615, 400, 1)
+m21.add_checkpoint(-750, 400, 1)
+#m21.add_checkpoint(600, 400, 1)
 
 #useless
 m211 = Mission(bot, -830, 410, 180, [0, 500])
@@ -24,12 +25,13 @@ m211.add_body(m211_body)
 m22 = Mission(bot, 280, 630, 180, [0, 500], 1)
 def m22_body():
     Ra.target(850, 500)
-    bot.straight_g(-230, 50, True, 180, speed=400)
+    bot.straight_g(-230, 100, True, 180, speed=400)
     bot.straight_g(100)
-    bot.straight_g(-170, 900, True, 45)
-    Ra.target(500, 500, False)
-    bot.straight_g(-300)
+    bot.straight_g(170, 900, True, 225)
+    #Ra.target(500, 500, False)
+    bot.straight_g(400)
 m22.add_body(m22_body)
+m22.add_checkpoint(100,150,-1)
 
 m23 = Mission(bot, 350, 105, 0, [0, 500])
 def m23_body():
