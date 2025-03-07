@@ -15,11 +15,11 @@ m11.add_body(m11_body)
 m11.add_checkpoint(430, 800, 1)
 
 #mission 2 coral
-m12 = Mission(bot, 430, 790, 180, [90, 830])
+m12 = Mission(bot, 430, 790, 180, [150, 830])
 def m12_body():
-    bot.straight_g(90, 50, True, 180)
     La.target(90)
-    La.target(80, wait=False, speed = 1000)
+    bot.straight_g(90, 50, True, 180)
+    La.target(75, wait=False, speed = 1000)
     bot.straight_g(50,speed = 600)
     La.target(120)
     Ra.target(1200)
@@ -38,6 +38,7 @@ m13.add_body(m13_body)
 m14 = Mission(bot, 300, 910, 25, [160, 1300])
 def m14_body():
     bot.straight_g(90)
+    bot.turn(15, 1)
     La.target(70)
     bot.straight_g(-102)
     bot.turn(70, 0, 500, speed=300)

@@ -3,7 +3,7 @@ from M01_Inicialization import*
 
 m30 = Setup(bot, 130, 113, 90, [[0,0],[2000, 1140]], -50, [-500, -200])
 
-m31 = Mission(bot, 770, 440, 45, [180, 100])
+m31 = Mission(bot, 760, 450, 45, [180, 100])
 def m31_body():
     Ra.target(470, 500)
     bot.straight_g(-70, 500)
@@ -14,7 +14,7 @@ m31.add_checkpoint(950,380,1)
 
 m32 = Mission(bot, -310, 350, 160, [180, 0], -1, turn=False, terminal_speed=500)
 def m32_body():
-    bot.straight_position(-150, 150, -1)
+    bot.straight_position(-1, 270, -1)
 m32.add_body(m32_body)
 m32.add_checkpoint(-1,350,1)
 
