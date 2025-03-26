@@ -22,10 +22,10 @@ def m211_body():
     bot.straight_g(500, 50, True, 200)
 m211.add_body(m211_body)
 
-m22 = Mission(bot, 280, 630, 180, [0, 500], 1)
+m22 = Mission(bot, 280, 622, 180, [0, 500], 1)
 def m22_body():
     Ra.target(850, 500)
-    bot.straight_g(-230, 100, True, 180, speed=400)
+    bot.straight_g(-400, 100, True, 180, speed=500)
     bot.straight_g(100)
     bot.straight_g(170, 900, True, 225)
     #Ra.target(500, 500, False)
