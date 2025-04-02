@@ -6,14 +6,13 @@ Ra.stress = 2
 m10 = Setup(bot, 130, 113, 90, [[0,0],[2000, 1140]], -200, [-500, -1000])
 
 #mission 1 clear the area
-m11 = Mission(bot, 470, 575, 50, [65, 250])
+m11 = Mission(bot, 470, 575, 50, [65, 1000])
 def m11_body():
     La.target(200)
-    
     bot.straight_position(300, 520, -1)
     #bot.straight_position(400, 860, 1)
 m11.add_body(m11_body)
-m11.add_checkpoint(430, 800, 1)
+#m11.add_checkpoint(430, 800, 1)
 
 #mission 2 coral
 m12 = Mission(bot, 430, 790, 180, [100, 300]) #90
@@ -34,7 +33,7 @@ m13 = Mission(bot, 320, -240, 135, [100, 1300])
 def m13_body():
     bot.straight_g(40, 70, True, 135)
     La.target(20)
-    #bot.straight_g(-50)
+    #bot.straight_g(-100, 900)
 m13.add_body(m13_body)
 
 #mission 4 reef, potapec dotyka se toho, zmen to, dikec
@@ -56,6 +55,18 @@ def m14_body():
     bot.straight_position(550, 850, 1)
 m14.add_body(m14_body)
 m14.add_checkpoint(550, 860, 1)
+
+m141 = Mission(bot, 475, 770, 90, [160, 1200], -1)
+def m141_body():
+    bot.straight_g(50)
+    Ra.target(800)
+    bot.straight_g(-50)
+    bot.straight_g(50, 900, True, 70)
+    bot.straight_g(80, 50, True, 90)
+    Ra.target(200)
+    Ra.target(800)
+    bot.straight_g(-60)
+m141.add_body(m141_body)
 
 #mission 5 bojka sample
 m15 = Mission(bot, 805, 832, 30, [160, 1300])
@@ -87,7 +98,7 @@ def m18_body():
 m18.add_body(m18_body)
 m18.add_checkpoint(-150, 70, 1)
 
-r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m16)
+r1 = Ride(Color.RED, m10, m11, m12, m13, m141, m15, m16)
 
 #MM micro managrer
 if __name__ == "Main":

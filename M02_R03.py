@@ -3,6 +3,12 @@ from M01_Inicialization import*
 
 m30 = Setup(bot, 130, 113, 90, [[0,0],[2000, 1140]], -50, [-500, -200])
 
+m311 = Mission(bot, 130, 460, 90, [10, 450])
+def m311_body():
+    Ra.target(100)
+    #bot.straight_g (50)
+m311.add_body(m311_body)
+
 m31 = Mission(bot, 765, 450, 45, [180, 100])
 def m31_body():
     Ra.target(400, 500)
@@ -21,7 +27,7 @@ def m32_body():
 m32.add_body(m32_body)
 m32.add_checkpoint(-1,350,1)
 
-r3 = Ride(Color.GREEN, m30, m31, m32)
+r3 = Ride(Color.GREEN, m30, m311)
 
 #MM micro managrer
 if __name__ == "Main":
