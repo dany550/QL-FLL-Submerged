@@ -299,13 +299,13 @@ class Robot:
         extra precise straight movement
         
         Parameters:
-            - distance: Number - in mm
-            - speed: Number - in deg/s
-            - origin: list
-            - terminal_speed: Number - in deg/s
-            - set_angle: bool
-            - angle: Number - in deg
-            - taks: object - this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
+            - distance: float ... in mm
+            - terminal_speed: int ... in deg/s ... agresive mode controler :)
+            - set_angle: bool ... enables travel given distance under given angle
+            - angle: Number ... in deg ... given angle when set_angle == True
+            - skipable: bool ... enables skipable status
+            - speed: float ... in deg/s - restricks the maximal speed
+            - taks: object ... this is a looppart function that you would like to incorporate into this function (eg. print() -> print ; and it'll start printing empti lines every turn)
         
         uses: accelerator, motor_controler, motor_driver, clamp, absclamp
         """
@@ -634,11 +634,14 @@ class Robot:
 
             if time > arm_time:
                 for i in range(len(self.arms)):
-                    cons = abs(clamp(800/arm_speeds[i], 6, 1.5))*self.arms[i].stress
-                    #cons(constant) = how many times the motor speed has to decrease to stop the motor.
-                    arm_speed = abs(self.arms[i].speed())
-                    if arm_speed < abs(arm_speeds[i]/cons):
-                        self.arms[i].stop()
+                    if arm_speeds[i] != 0:  
+                        cons = abs(clamp(800/arm_speeds[i], 6, 1.5))*self.arms[i].stress
+                        #cons(constant) = how many times the motor speed has to decrease to stop the motor.
+                        arm_speed = abs(self.arms[i].speed())
+                        if arm_speed < abs(arm_speeds[i]/cons):
+                            self.arms[i].stop()
+                            arm_done[i] = True
+                    else:
                         arm_done[i] = True
                 arms_done = True
                 for a_done in arm_done:
