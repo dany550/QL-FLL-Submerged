@@ -1,24 +1,41 @@
 from M01_Inicialization import*
 #def missions
 
-m30 = Setup(bot, 130, 113, 90, [[0,0],[2000, 1140]], -50, [-500, -200])
+m30 = Setup(bot, 130, 113, 90, [[0,0],[2000, 1140]], -50, [0, -200])
 
-m31 = Mission(bot, 760, 450, 45, [180, 100])
+m31 = Mission(bot, 320, 680, 0, [10, 0])
 def m31_body():
-    Ra.target(470, 500)
-    bot.straight_g(-70, 500)
-    Ra.target(550, 1000 , False)
-    bot.straight_g(-40)
+    bot.straight_g(170, speed=150)
+    bot.straight_g(-150)
 m31.add_body(m31_body)
-m31.add_checkpoint(950,380,1)
 
-m32 = Mission(bot, -310, 350, 160, [180, 0], -1, turn=False, terminal_speed=500)
+m32 = Mission(bot, 440, 220, 0,[250,10],-1)
 def m32_body():
-    bot.straight_position(-1, 270, -1)
+    Ra.target(800)
 m32.add_body(m32_body)
-m32.add_checkpoint(-1,350,1)
 
-r3 = Ride(Color.GREEN, m30, m31, m32)
+m321 = Mission(bot, 240, 190, 0,[250,10],-1)
+def m321_body():
+    Ra.target(750)
+    bot.straight_g(260, 300, set_angle=True, angle=11)
+    bot.straight_g(110,300,set_angle=True,angle=-5)
+    bot.straight_g(450, set_angle=True, angle=-15)
+    Ra.target(10)
+    bot.straight_g(-150)
+
+m321.add_body(m321_body)
+
+m33 = Mission(bot, 960, 325, 45,[250,10])
+def m33_body():
+    La.target(-100)
+    bot.straight_g(180, 300, set_angle=True, angle=45)
+    bot.straight_g(800,set_angle=True, angle=-15)
+
+m33.add_body(m33_body)
+
+
+
+r3 = Ride(Color.GREEN, m30, m31, m32, m33)
 
 #MM micro managrer
 if __name__ == "Main":
