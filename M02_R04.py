@@ -23,13 +23,12 @@ def m43_body():
     Ra.target(165)
     bot.straight_g(-100, 50, True, 100)
     bot.straight_g(110, 50, True, 129)
-    bot.turn(90, 0)
     Ra.target(670)
     bot.straight_g(-100)
 m43.add_body(m43_body)
 m43.add_checkpoint(-400, 800, 1)
 
-m44 = Mission(bot, -350, 870, 15, [180, 400])
+m44 = Mission(bot, -330, 870, 15, [180, 400])
 def m44_body():
     Ra.target(10)
     bot.straight_g(-150, 900)
