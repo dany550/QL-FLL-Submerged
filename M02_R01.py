@@ -22,23 +22,24 @@ def m12_body():
     Ra.target(1200)
     bot.straight_g(-120)
 m12.add_body(m12_body)
+m12.add_checkpoint(430, 790, 1)
 
 #mission 3 shark
-m13 = Mission(bot, 320, -240, 135, [100, 1300])
+m13 = Mission(bot, 290, -210, 135, [100, 1300])
 def m13_body():
-    bot.straight_g(40, 70, True, 135)
+    #bot.straight_g(40, 80, True, 135)
     La.target(20)
 m13.add_body(m13_body)
 
 #mission 4 reef
-m14 = Mission(bot, 475, 770, 90, [160, 1200], -1)
+m14 = Mission(bot, 475, 755, 100, [160, 1200], -1)
 def m14_body():
     bot.straight_g(50)
     Ra.target(800)
     bot.straight_g(-70)
     Ra.target(700, 1000, False)
-    bot.straight_g(70, 900, True, 75)
-    bot.straight_g(80, 50, True, 90)
+    bot.straight_g(70, 900, True,75)
+    bot.straight_g(80, 50, True, 120)
     Ra.target(200)
     Ra.target(800)
     bot.straight_g(-60)
@@ -62,7 +63,7 @@ def m16_body():
     bot.straight_position(-260, 200, 1)
 m16.add_body(m16_body)
 
-r1 = Ride(Color.RED, m10, m11, m12, m13, m14, m15, m16)
+r1 = Ride(Color.RED, m10, m12, m13, m14, m15, m16)
 
 #MM micro managrer
 if __name__ == "Main":

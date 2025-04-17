@@ -18,17 +18,18 @@ def m42_body():
     
 m42.add_body(m42_body)
 
-m43 = Mission(bot, -500, 900, 115, [150, 600])
+m43 = Mission(bot, -520, 900, 115, [150, 600])
 def m43_body():
-    Ra.target(160)
+    Ra.target(165)
     bot.straight_g(-100, 50, True, 100)
     bot.straight_g(110, 50, True, 129)
+    bot.turn(90, 0)
     Ra.target(670)
     bot.straight_g(-100)
 m43.add_body(m43_body)
 m43.add_checkpoint(-400, 800, 1)
 
-m44 = Mission(bot, -330, 870, 15, [180, 400])
+m44 = Mission(bot, -350, 870, 15, [180, 400])
 def m44_body():
     Ra.target(10)
     bot.straight_g(-150, 900)
@@ -37,7 +38,7 @@ def m44_body():
     bot.straight_g(-100)
 m44.add_body(m44_body)
 
-m45 = Mission(bot, 1120, -270, 135, [180, 0], -1)
+m45 = Mission(bot, 1150, -270, 135, [180, 0])
 def m45_body():
     bot.straight_g(80)
     Ra.target(660)
@@ -47,7 +48,7 @@ m45.add_checkpoint(-820, 840, 1)
 m46 = Mission(bot, -820, 840, 135, [180, 500], -1)
 
 
-r4 = Ride(Color.YELLOW, m40, m42, m43, m44 , m45, m46)
+r4 = Ride(Color.YELLOW, m40, m42, m43, m45, m46)
 
 #MM micro managrer
 if __name__ == "Main":

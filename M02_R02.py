@@ -27,6 +27,7 @@ def m23_body():
     bot.straight_g(180)
     Ra.target(300)
     bot.straight_g(-100, 900)
+    La.target(110, 1000, False)
     bot.straight_position(150, 150, -1)
 m23.add_body(m23_body)
 

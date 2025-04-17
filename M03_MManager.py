@@ -2,8 +2,9 @@ from M02_R01 import*
 from M02_R02 import*
 from M02_R03 import*
 from M02_R04 import*
+from M02_R032 import*
 
-rides = [r1, r2, r3, r4]
+rides = [r1, r2, r3, r4, r31]
 
 color = Color.NONE
 started = True
@@ -30,13 +31,22 @@ while True:
         else:
             hub.speaker.beep(400)
 
+    #original shaker
+    #if color == Color.NONE:
+    #    for arm in bot.arms:
+    #        arm.run(shake_speed)
+    #else:
+    #    for arm in bot.arms:
+    #        if arm.stalled():
+    #            arm.stop()
+
+    #ztupený shaker
     if color == Color.NONE:
-        for arm in bot.arms:
-            arm.run(shake_speed)
+        bot.arms[1].run(shake_speed)
     else:
-        for arm in bot.arms:
-            if arm.stalled():
-                arm.stop()
+        if bot.arms[1].stalled():
+            bot.arms[1].stop()
+    
 
     ride_n = 0
     for i in range(len(rides)):
